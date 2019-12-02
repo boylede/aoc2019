@@ -54,7 +54,7 @@ fn part1(lines: &Vec<String>) {
         // println!("{}:{}", mass, accumulator);
         (mass / 3) - 2 + accumulator
     });
-    println!("part 1 answer: {}", fuel_sum);
+    println!("Part 1: {}", fuel_sum);
 }
 
 fn part2(lines: &Vec<String>) {
@@ -77,5 +77,5 @@ fn part2(lines: &Vec<String>) {
         // println!("module needed: {:?}", supporting_fuel);
         supporting_fuel.iter().fold(0, |accum, fuel| accum + fuel) + accumulator
     });
-    println!("part 2 answer: {}", fuel_sum);
+    println!("Part 2: {}", fuel_sum);
 }

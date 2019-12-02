@@ -45,11 +45,29 @@ fn post_load(lines: Vec<String>) {
 }
 
 fn part1(lines: &Vec<String>) {
-    let mut program : Vec<i32> = lines[0].split_terminator(',').map(|num| num.parse::<i32>().unwrap()).collect();
-    println!("program {:?}", program);
+    let program : Vec<i32> = lines[0].split_terminator(',').map(|num| num.parse::<i32>().unwrap()).collect();
+    let value = run_program(&program, 12, 2);
+    println!("Part 1: {}", value);
+    
+}
 
-    program[1] = 12;
-    program[2] = 2;
+fn part2(lines: &Vec<String>) {
+    let program : Vec<i32> = lines[0].split_terminator(',').map(|num| num.parse::<i32>().unwrap()).collect();
+    for noun in 0..=99 {
+        for verb in 0..=99 {
+            let value = run_program(&program, noun, verb);
+            if value == 19690720 {
+                println!("Part 2: {}", noun*100+verb);
+                return;
+            } 
+        }
+    }
+}
+
+fn run_program(initial_program: &Vec<i32>, noun: i32, verb: i32) -> i32 {
+    let mut program : Vec<i32> = initial_program.clone();
+    program[1] = noun;
+    program[2] = verb;
 
     let mut PC = 0;
     while program[PC] != 99 {
@@ -63,7 +81,6 @@ fn part1(lines: &Vec<String>) {
                 let output_index = program[PC + 3];
                 let output = a + b;
                 program[output_index as usize] = output;
-                println!("{} + {} = {}, put in {}", a, b, output, output_index);
                 PC = PC + 4;
             },
             2 => {
@@ -75,21 +92,16 @@ fn part1(lines: &Vec<String>) {
                 let output_index = program[PC + 3];
                 let output = a * b;
                 program[output_index as usize] = output;
-                println!("{} * {} = {}, put in {}", a, b, output, output_index);
                 PC = PC + 4;
             },
             99 => {
-                println!("Program halted at 99");
+                // unreachable... would fix for complete-ness but...
+                // println!("Program halted at 99");
             },
             _ => {
                 panic!("Program halted at unexpected input");
             }
         }
     }
-    println!("program result: {}", program[0]);
-    
-}
-
-fn part2(lines: &Vec<String>) {
-
+    program[0]
 }
