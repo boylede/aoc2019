@@ -69,34 +69,34 @@ fn run_program(initial_program: &Vec<i32>, noun: i32, verb: i32) -> i32 {
     program[1] = noun;
     program[2] = verb;
 
-    let mut PC = 0;
-    while program[PC] != 99 {
-        match program[PC] {
+    let mut counter = 0;
+    loop {
+        match program[counter] {
             1 => {
-                let a_index = program[PC + 1];
-                let b_index = program[PC + 2];
+                let a_index = program[counter + 1];
+                let b_index = program[counter + 2];
                 let a = program[a_index as usize];
                 let b = program[b_index as usize];
     
-                let output_index = program[PC + 3];
+                let output_index = program[counter + 3];
                 let output = a + b;
                 program[output_index as usize] = output;
-                PC = PC + 4;
+                counter = counter + 4;
             },
             2 => {
-                let a_index = program[PC + 1];
-                let b_index = program[PC + 2];
+                let a_index = program[counter + 1];
+                let b_index = program[counter + 2];
                 let a = program[a_index as usize];
                 let b = program[b_index as usize];
     
-                let output_index = program[PC + 3];
+                let output_index = program[counter + 3];
                 let output = a * b;
                 program[output_index as usize] = output;
-                PC = PC + 4;
+                counter = counter + 4;
             },
             99 => {
-                // unreachable... would fix for complete-ness but...
                 // println!("Program halted at 99");
+                break;
             },
             _ => {
                 panic!("Program halted at unexpected input");
