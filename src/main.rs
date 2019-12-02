@@ -10,6 +10,7 @@ use std::process;
 // use std::env;
 
 mod day1;
+mod day2;
 
 const USAGE : &'static str = "Dan Boyle's Advent of Code 2019 entries.
 	-d, --day (default 1) which day's code to run.
@@ -22,14 +23,15 @@ fn main() {
 	let mut days : Vec<Day>= Vec::new();
 
 	day1::load(&mut days);
+	day2::load(&mut days);
 
 /* 	Debug Prints */
-	let mut debug_text = String::new();
-	debug_text.push_str("Loaded days:\n");
-	for day in &days {
-		debug_text.push_str(&format!("{}\n", day));
-	}
-	print!("{}", debug_text);
+	// let mut debug_text = String::new();
+	// debug_text.push_str("Loaded days:\n");
+	// for day in &days {
+	// 	debug_text.push_str(&format!("{}\n", day));
+	// }
+	// print!("{}", debug_text);
 
 /* 	Parse Arguments */
 

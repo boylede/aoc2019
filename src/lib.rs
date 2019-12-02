@@ -10,7 +10,9 @@ use reqwest::header::{HeaderMap, HeaderValue, HeaderName};
 
 use select::document::{Document};
 use select::node::{Node};
-use select::predicate::{Predicate, Attr, Class, Name};
+use select::predicate::{Predicate, Name};
+
+const YEAR: i32 = 2019;
 
 #[derive(Debug)]
 pub struct Config {
@@ -68,7 +70,7 @@ impl fmt::Display for Day {
 pub fn get_input_file(day: i32, optional_input: &String) -> Result<File, std::io::Error> {
 	let input_filename = match optional_input.len() {
         0 => {
-        	println!("Using default input");
+        	// println!("Using default input");
         	get_instructions_for_day(day);
         	get_input_for_day(day)
         },
@@ -84,12 +86,12 @@ pub fn get_input_file(day: i32, optional_input: &String) -> Result<File, std::io
 pub fn get_input_for_day(day: i32) -> String {
 	let file_path = format!("input/day{}.txt", day);
 	let file = fs::OpenOptions::new().read(true).write(false).create(false).open(&file_path);
-	let url = format!("https://adventofcode.com/2019/day/{}/input", day);
+	let url = format!("https://adventofcode.com/{}/day/{}/input", YEAR, day);
 	if let Err(_e) = file {
 		println!("Downloading inputs for this day.");
 		download_to_file(url, &file_path);
 	} else {
-		println!("Found cached input file");
+		// println!("Found cached input file");
 	}
     file_path
 }
@@ -101,7 +103,7 @@ pub fn get_instructions_for_day(day: i32) {
 	if let Err(_e) = file {
 		let file = fs::OpenOptions::new().read(true).write(true).create(true).open(&file_path);
 		if let Ok(mut file) = file {
-					let doc = get_html_document(format!("https://adventofcode.com/2019/day/{}", day));
+					let doc = get_html_document(format!("https://adventofcode.com/{}/day/{}", YEAR, day));
 			// let mut buf = Cursor::new(Vec::with_capacity(20480));
 			for main in doc.find(Name("body").descendant(Name("main"))) {
 				node_to_markdown(main, &mut file);
@@ -109,20 +111,9 @@ pub fn get_instructions_for_day(day: i32) {
 			file.flush().unwrap();
 		}
 	} else {
-		println!("already had instructions");
+		// println!("already had instructions");
 	}
 }
-
-	// if let Ok(mut file) = file {
-	// 	let doc = get_html_document(format!("https://adventofcode.com/2018/day/{}", day));
-	// 	// let mut buf = Cursor::new(Vec::with_capacity(20480));
-	// 	for main in doc.find(Name("body").descendant(Name("main"))) {
-	// 		node_to_markdown(main, &mut file);
-	// 	}
-	// 	file.flush().unwrap();
-	// } else {
-	// 	println!("already had instructions");
-	// }
 
 fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) {
 	for node in parent.children() {

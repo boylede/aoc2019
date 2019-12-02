@@ -1,10 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::num::ParseIntError;
-use std::str::FromStr;
-use std::collections::HashMap;
-
 
 use aoc2019::Day;
 
@@ -26,7 +22,13 @@ pub fn run(input: File) {
         }
     }
     let b_time = time::precise_time_ns();
-    println!("Loading took: {}ns", b_time - a_time);
+    let total_time = b_time - a_time;
+    if total_time > 100000 {
+        println!("Loading took: {}ms", total_time as f32 / 1000000.0);
+    } else {
+        println!("Loading took: {}ns", total_time);
+    }
+    
     post_load(lines);
 
 }
@@ -41,6 +43,7 @@ fn post_load(lines: Vec<String>) {
     println!("Day {} Part 2 took: {}ns", DAY, c_time - b_time);
 
 }
+
 fn part1(lines: &Vec<String>) {
     let fuel_sum = lines.iter()
     .map(|line| {
@@ -51,12 +54,10 @@ fn part1(lines: &Vec<String>) {
         // println!("{}:{}", mass, accumulator);
         (mass / 3) - 2 + accumulator
     });
-    println!("fuel needed: {}", fuel_sum);
+    println!("part 1 answer: {}", fuel_sum);
 }
 
-
 fn part2(lines: &Vec<String>) {
-    println!("part two");
     let fuel_sum = lines.iter()
     .map(|line| {
         let num = line.parse::<i32>().unwrap();
@@ -76,6 +77,5 @@ fn part2(lines: &Vec<String>) {
         // println!("module needed: {:?}", supporting_fuel);
         supporting_fuel.iter().fold(0, |accum, fuel| accum + fuel) + accumulator
     });
-    println!("fuel needed: {}", fuel_sum);
+    println!("part 2 answer: {}", fuel_sum);
 }
-
