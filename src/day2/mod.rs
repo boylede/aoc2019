@@ -46,29 +46,32 @@ fn post_load(lines: Vec<String>) {
 
 fn part1(lines: &Vec<String>) {
     let program : Vec<i32> = lines[0].split_terminator(',').map(|num| num.parse::<i32>().unwrap()).collect();
-    let value = run_program(&program, 12, 2);
+    let value = evaluate(&program, 12, 2);
     println!("Part 1: {}", value);
-    
 }
 
 fn part2(lines: &Vec<String>) {
     let program : Vec<i32> = lines[0].split_terminator(',').map(|num| num.parse::<i32>().unwrap()).collect();
     for noun in 0..=99 {
         for verb in 0..=99 {
-            let value = run_program(&program, noun, verb);
+            let value = evaluate(&program, noun, verb);
             if value == 19690720 {
-                println!("Part 2: {}", noun*100+verb);
+                println!("Part 2: {}", noun * 100 + verb);
                 return;
-            } 
+            }
         }
     }
 }
 
-fn run_program(initial_program: &Vec<i32>, noun: i32, verb: i32) -> i32 {
+fn evaluate(initial_program: &Vec<i32>, noun: i32, verb: i32) -> i32 {
     let mut program : Vec<i32> = initial_program.clone();
     program[1] = noun;
     program[2] = verb;
+    let final_state = run_program(program);
+    final_state[0]
+}
 
+fn run_program(mut program: Vec<i32>) -> Vec<i32> {
     let mut counter = 0;
     loop {
         match program[counter] {
@@ -103,5 +106,20 @@ fn run_program(initial_program: &Vec<i32>, noun: i32, verb: i32) -> i32 {
             }
         }
     }
-    program[0]
+    program
+}
+
+
+#[test]
+pub fn tests() {
+  pub fn run(test: &str) -> Vec<i32> {
+    let mut program = test.split(',').map(|s| s.parse::<i32>().unwrap()).collect();
+    run_program(program)
+  }
+
+assert_eq!(run("1,0,0,0,99"), vec![2,0,0,0,99]);
+assert_eq!(run("2,3,0,3,99"), vec![2,3,0,6,99]);
+assert_eq!(run("2,4,4,5,99,0"), vec![2,4,4,5,99,9801]);
+assert_eq!(run("1,1,1,4,99,5,6,0,99"), vec![30,1,1,4,2,5,6,0,99]);
+
 }
