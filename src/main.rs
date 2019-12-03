@@ -10,6 +10,7 @@ use std::process;
 
 mod day1;
 mod day2;
+mod day3;
 
 const USAGE: &'static str = "Dan Boyle's Advent of Code 2019 entries.
 	-d, --day (default 1) which day's code to run.
@@ -23,6 +24,7 @@ fn main() {
 
     day1::load(&mut days);
     day2::load(&mut days);
+    day3::load(&mut days);
 
     /* 	Debug Prints */
     // let mut debug_text = String::new();
