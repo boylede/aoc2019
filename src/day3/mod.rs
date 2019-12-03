@@ -47,20 +47,11 @@ fn post_load(lines: Vec<String>) {
 
 }
 
-#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
 struct Coordinate {
     x: i32,
     y: i32,
 }
-
-#[derive(Hash, PartialEq, Eq, Clone, Copy)]
-enum State {
-    Unvisited,
-    Bert,
-    Ernie,
-    Both,
-}
-
 
 #[derive(Copy, Clone)]
 struct RelativeLine {
@@ -71,7 +62,7 @@ struct RelativeLine {
 impl RelativeLine {
     fn extract_points(&self, mut x: i32, mut y: i32) -> Vec<Coordinate> {
         let mut pts = vec![];
-        for i in 0..self.distance {
+        for _ in 0..self.distance {
             match self.direction {
                 Direction::Up => y = y + 1,
                 Direction::Right => x = x + 1,
@@ -161,12 +152,65 @@ fn part1(lines: &Vec<String>) {
 }
 
 fn part2(lines: &Vec<String>) {
-    let mut space: HashMap<Coordinate, i32> = HashMap::new();
+    let mut a_points: HashMap<Coordinate, i32> = HashMap::new();
     let a : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0].split(',').map(|l| l.parse::<RelativeLine>()).collect();
     let a = a.unwrap();
 
     let mut x : i32 = 0;
     let mut y : i32 = 0;
-    a.iter().for_each(|r| {});
-    println!("Part 2: {}", 0);
+    let mut dist = 1;
+    a.iter().for_each(|r| {
+        let points = r.extract_points(x, y);
+        points.iter().for_each(|p| {
+            a_points.insert(*p, dist);
+            dist = dist + 1;
+        });
+        let (u, v) = r.end(x, y);
+        x = u;
+        y = v;
+    });
+    x = 0;
+    y = 0;
+    dist = 1;
+    let mut b_points: HashMap<Coordinate, i32> = HashMap::new();
+    let b : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[1].split(',').map(|l| l.parse::<RelativeLine>()).collect();
+    let b = b.unwrap();
+    b.iter().for_each(|r| {
+        let points = r.extract_points(x, y);
+        points.iter().for_each(|p| {
+            b_points.insert(*p, dist);
+            dist = dist + 1;
+        });
+        let (u, v) = r.end(x, y);
+        x = u;
+        y = v;
+    });
+    // println!("start super slow check");
+    let common_points : Vec<Coordinate> = a_points
+        .keys()
+        // .inspect(|k| print!("{:?}", k))
+        .filter(|a_k| b_points
+            .keys()
+            .any(|b_k| *b_k == **a_k))
+        .map(|e| e.clone())
+        .collect();
+    // println!("common points: {:?}", common_points);
+    let best = common_points.iter().fold(10000, |best, current| {
+        let a_distance = a_points.get(current).unwrap();
+        let b_distance = b_points.get(current).unwrap();
+        let total = a_distance + b_distance;
+        if total < best {
+            total
+        } else {
+            best
+        }
+    });
+    // let best : i32 = a_points.intersection(&b_points).map(|Coordinate{x, y} | x.abs() + y.abs()).fold(10000, |highest, current| {
+    //     if current < highest {
+    //         current 
+    //     } else {
+    //         highest
+    //     }
+    // });
+    println!("Part 2: {}", best);
 }
