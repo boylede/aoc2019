@@ -71,7 +71,7 @@ pub fn get_input_file(day: i32, optional_input: &String) -> Result<File, std::io
 	let input_filename = match optional_input.len() {
         0 => {
         	// println!("Using default input");
-        	get_instructions_for_day(day);
+        	get_instructions_for_day(day)?;
         	get_input_for_day(day)
         },
         _ => {
@@ -96,7 +96,7 @@ pub fn get_input_for_day(day: i32) -> String {
     file_path
 }
 
-pub fn get_instructions_for_day(day: i32) {
+pub fn get_instructions_for_day(day: i32) -> Result<(), std::io::Error> {
 	let file_path = format!("instructions/day{}.md", day);
 	let file = fs::OpenOptions::new().read(true).write(false).create(false).open(&file_path);
 	
@@ -106,49 +106,38 @@ pub fn get_instructions_for_day(day: i32) {
 					let doc = get_html_document(format!("https://adventofcode.com/{}/day/{}", YEAR, day));
 			// let mut buf = Cursor::new(Vec::with_capacity(20480));
 			for main in doc.find(Name("body").descendant(Name("main"))) {
-				node_to_markdown(main, &mut file);
+				node_to_markdown(main, &mut file)?;
 			}
-			file.flush().unwrap();
+			file.flush()?
 		}
-	} else {
-		// println!("already had instructions");
 	}
+	Ok(())
 }
 
-fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) {
+fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::Error> {
 	for node in parent.children() {
 		if let Some(name) = node.name() {
 			match name {
-				"article" => node_to_markdown(node, buf),
-				"h2" => {
-					write!(buf, "## {}\n",node.text());
-				},
-				"p" => {
-					write!(buf, "{}\n\n", node.text());
-				},
-				"pre" => {
-					write!(buf, "\t{}\n", node.text());
-				},
+				"article" => node_to_markdown(node, buf)?,
+				"h2" => write!(buf, "## {}\n",node.text())?,
+				"p" => write!(buf, "{}\n\n", node.text())?,
+				"pre" => write!(buf, "\t{}\n", node.text())?,
 				"ul" => {
-					write!(buf, "\n");
-					node_to_markdown(node, buf);
-					write!(buf, "\n");
+					write!(buf, "\n")?;
+					node_to_markdown(node, buf)?
 				},
-				"li" => {
-					write!(buf, "  * {}\n", node.text());
-				},
-				_ => {
-					write!(buf, "\n<{}>\n", node.text());
-				},
+				"li" => write!(buf, "  * {}\n", node.text())?,
+				_ => write!(buf, "\n<{}>\n", node.text())?,
 			}
 		}
 	}
+	Ok(())
 }
 
 fn get_html_document(url: String) -> Document {
 	let mut buf = Cursor::new(Vec::with_capacity(20480)); // 20kb buffer
 	download_to_buffer(url, &mut buf);
-	buf.seek(SeekFrom::Start(0));
+	buf.seek(SeekFrom::Start(0)).expect("Shouldn't fail");
 	Document::from_read(buf).unwrap()
 }
 
@@ -156,7 +145,7 @@ fn make_session_header() -> HeaderMap {
 	
 	let session_file = match fs::OpenOptions::new().read(true).write(false).create(false).open("session.txt") {
 		Ok(file) => file,
-		Err(e) => panic!("Please create a session.txt file"),
+		Err(_) => panic!("Please create a session.txt file"),
 	};
 
 	let mut session_reader = BufReader::new(session_file);
