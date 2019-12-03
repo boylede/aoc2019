@@ -1,8 +1,8 @@
+use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::collections::HashSet;
-use std::collections::HashMap;
 use std::str::FromStr;
 
 use aoc2019::Day;
@@ -16,8 +16,8 @@ pub fn load(days_array: &mut Vec<Day>) {
 pub fn run(input: File) {
     println!("loading day {} input.", DAY);
     let a_time = time::precise_time_ns();
-    
-    let mut lines = vec!();
+
+    let mut lines = vec![];
     {
         let mut lines_iterator = BufReader::new(&input).lines();
         while let Some(Ok(line)) = lines_iterator.next() {
@@ -31,9 +31,8 @@ pub fn run(input: File) {
     } else {
         println!("Loading took: {}ns", total_time);
     }
-    
-    post_load(lines);
 
+    post_load(lines);
 }
 
 fn post_load(lines: Vec<String>) {
@@ -44,7 +43,6 @@ fn post_load(lines: Vec<String>) {
     let c_time = time::precise_time_ns();
     println!("Day {} Part 1 took: {}ns", DAY, b_time - a_time);
     println!("Day {} Part 2 took: {}ns", DAY, c_time - b_time);
-
 }
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
@@ -69,7 +67,7 @@ impl RelativeLine {
                 Direction::Left => x = x - 1,
                 Direction::Down => y = y - 1,
             }
-            pts.push(Coordinate{x, y})
+            pts.push(Coordinate { x, y })
         }
         pts
     }
@@ -104,18 +102,23 @@ impl FromStr for RelativeLine {
             "R" => Direction::Right,
             _ => panic!("invalid direction in input"),
         };
-        Ok(RelativeLine{direction, distance})
+        Ok(RelativeLine {
+            direction,
+            distance,
+        })
     }
 }
 
-
 fn part1(lines: &Vec<String>) {
     let mut a_points: HashSet<Coordinate> = HashSet::new();
-    let a : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0].split(',').map(|l| l.parse::<RelativeLine>()).collect();
+    let a: Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0]
+        .split(',')
+        .map(|l| l.parse::<RelativeLine>())
+        .collect();
     let a = a.unwrap();
 
-    let mut x : i32 = 0;
-    let mut y : i32 = 0;
+    let mut x: i32 = 0;
+    let mut y: i32 = 0;
     a.iter().for_each(|r| {
         let points = r.extract_points(x, y);
         points.iter().for_each(|p| {
@@ -129,7 +132,10 @@ fn part1(lines: &Vec<String>) {
     x = 0;
     y = 0;
     let mut b_points: HashSet<Coordinate> = HashSet::new();
-    let b : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[1].split(',').map(|l| l.parse::<RelativeLine>()).collect();
+    let b: Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[1]
+        .split(',')
+        .map(|l| l.parse::<RelativeLine>())
+        .collect();
     let b = b.unwrap();
     b.iter().for_each(|r| {
         let points = r.extract_points(x, y);
@@ -140,24 +146,32 @@ fn part1(lines: &Vec<String>) {
         x = u;
         y = v;
     });
-    let best : i32 = a_points.intersection(&b_points).map(|Coordinate{x, y} | x.abs() + y.abs()).fold(10000, |highest, current| {
-        if current < highest {
-            current 
-        } else {
-            highest
-        }
-    });
+    let best: i32 = a_points
+        .intersection(&b_points)
+        .map(|Coordinate { x, y }| x.abs() + y.abs())
+        .fold(
+            10000,
+            |highest, current| {
+                if current < highest {
+                    current
+                } else {
+                    highest
+                }
+            },
+        );
     println!("Part 1: {}", best);
-    
 }
 
 fn part2(lines: &Vec<String>) {
     let mut a_points: HashMap<Coordinate, i32> = HashMap::new();
-    let a : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0].split(',').map(|l| l.parse::<RelativeLine>()).collect();
+    let a: Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0]
+        .split(',')
+        .map(|l| l.parse::<RelativeLine>())
+        .collect();
     let a = a.unwrap();
 
-    let mut x : i32 = 0;
-    let mut y : i32 = 0;
+    let mut x: i32 = 0;
+    let mut y: i32 = 0;
     let mut dist = 1;
     a.iter().for_each(|r| {
         let points = r.extract_points(x, y);
@@ -173,7 +187,10 @@ fn part2(lines: &Vec<String>) {
     y = 0;
     dist = 1;
     let mut b_points: HashMap<Coordinate, i32> = HashMap::new();
-    let b : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[1].split(',').map(|l| l.parse::<RelativeLine>()).collect();
+    let b: Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[1]
+        .split(',')
+        .map(|l| l.parse::<RelativeLine>())
+        .collect();
     let b = b.unwrap();
     b.iter().for_each(|r| {
         let points = r.extract_points(x, y);
@@ -185,16 +202,12 @@ fn part2(lines: &Vec<String>) {
         x = u;
         y = v;
     });
-    // println!("start super slow check");
-    let common_points : Vec<Coordinate> = a_points
+
+    let common_points: Vec<Coordinate> = a_points
         .keys()
-        // .inspect(|k| print!("{:?}", k))
-        .filter(|a_k| b_points
-            .keys()
-            .any(|b_k| *b_k == **a_k))
+        .filter(|a_k| b_points.keys().any(|b_k| *b_k == **a_k))
         .map(|e| e.clone())
         .collect();
-    // println!("common points: {:?}", common_points);
     let best = common_points.iter().fold(10000, |best, current| {
         let a_distance = a_points.get(current).unwrap();
         let b_distance = b_points.get(current).unwrap();
@@ -205,12 +218,6 @@ fn part2(lines: &Vec<String>) {
             best
         }
     });
-    // let best : i32 = a_points.intersection(&b_points).map(|Coordinate{x, y} | x.abs() + y.abs()).fold(10000, |highest, current| {
-    //     if current < highest {
-    //         current 
-    //     } else {
-    //         highest
-    //     }
-    // });
+
     println!("Part 2: {}", best);
 }
