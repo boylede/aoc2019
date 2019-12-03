@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::str::FromStr;
 
 use aoc2019::Day;
 
@@ -45,16 +46,21 @@ fn post_load(lines: Vec<String>) {
 }
 
 fn part1(lines: &Vec<String>) {
-    let program : Vec<i32> = lines[0].split_terminator(',').map(|num| num.parse::<i32>().unwrap()).collect();
-    let value = evaluate(&program, 12, 2);
+    let mut program : Program = lines[0].parse().unwrap();
+    program.load_input(12, 2);
+    program.execute();
+    let value = program.output();
     println!("Part 1: {}", value);
 }
 
 fn part2(lines: &Vec<String>) {
-    let program : Vec<i32> = lines[0].split_terminator(',').map(|num| num.parse::<i32>().unwrap()).collect();
+    let program : Program = lines[0].parse().unwrap();
     for noun in 0..=99 {
         for verb in 0..=99 {
-            let value = evaluate(&program, noun, verb);
+            let mut attempt = program.clone();
+            attempt.load_input(noun, verb);
+            attempt.execute();
+            let value = attempt.output();
             if value == 19690720 {
                 println!("Part 2: {}", noun * 100 + verb);
                 return;
@@ -62,59 +68,98 @@ fn part2(lines: &Vec<String>) {
         }
     }
 }
-
-fn evaluate(initial_program: &Vec<i32>, noun: i32, verb: i32) -> i32 {
-    let mut program : Vec<i32> = initial_program.clone();
-    program[1] = noun;
-    program[2] = verb;
-    let final_state = run_program(program);
-    final_state[0]
+#[derive(Clone)]
+struct Program {
+    counter: usize,
+    cycles: usize,
+    running: bool,
+    memory: Vec<i32>,
 }
 
-fn run_program(mut program: Vec<i32>) -> Vec<i32> {
-    let mut counter = 0;
-    loop {
-        match program[counter] {
-            1 => {
-                let a_index = program[counter + 1];
-                let b_index = program[counter + 2];
-                let a = program[a_index as usize];
-                let b = program[b_index as usize];
-    
-                let output_index = program[counter + 3];
-                let output = a + b;
-                program[output_index as usize] = output;
-                counter = counter + 4;
-            },
-            2 => {
-                let a_index = program[counter + 1];
-                let b_index = program[counter + 2];
-                let a = program[a_index as usize];
-                let b = program[b_index as usize];
-    
-                let output_index = program[counter + 3];
-                let output = a * b;
-                program[output_index as usize] = output;
-                counter = counter + 4;
-            },
-            99 => {
-                // println!("Program halted at 99");
-                break;
-            },
-            _ => {
-                panic!("Program halted at unexpected input");
-            }
+impl Program {
+    fn load_input(&mut self, noun: i32, verb: i32) {
+        self.memory[1] = noun;
+        self.memory[2] = verb;
+    }
+    fn new(memory: Vec<i32>) -> Program {
+        Program {
+            counter: 0,
+            cycles: 0,
+            running: true,
+            memory,
         }
     }
-    program
+    // fn step(&mut self, ticks: usize) {
+        
+    // }
+    fn get_offset(&self, offset: usize) -> i32 {
+        self.memory[self.counter + offset]
+    }
+    fn get_indirect(&self, offset: usize) -> i32 {
+        self.memory[self.get_offset(offset) as usize]
+    }
+    fn set_indirect(&mut self, offset: usize, value: i32) {
+        let index = self.memory[self.counter + offset];
+        self.set(index as usize, value);
+    }
+    fn set(&mut self, index: usize, value: i32) {
+        self.memory[index] = value; 
+    }
+    fn execute(&mut self) {
+        loop {
+            match self.memory[self.counter] {
+                1 => {
+                    let a = self.get_indirect(1);
+                    let b = self.get_indirect(2);
+                    self.set_indirect(3, a + b);
+                    self.counter = self.counter + 4;
+                },
+                2 => {
+                    let a = self.get_indirect(1);
+                    let b = self.get_indirect(2);
+                    self.set_indirect(3, a * b);
+                    self.counter = self.counter + 4;
+                },
+                99 => {
+                    break;
+                },
+                _ => {
+                    panic!("Program halted at unexpected input");
+                }
+            }
+        }
+        self.cycles = self.counter;
+        self.running = false;
+    }
+    fn output(&self) -> i32 {
+        self.memory[0]
+    }
 }
+
+
+impl FromStr for Program {
+    type Err = std::num::ParseIntError;
+    fn from_str(input: &str) -> Result<Program, Self::Err> {
+        Ok(
+            Program::new(
+                input
+                .split_terminator(',')
+                .map(|num| num.parse::<i32>())
+                .collect::<Result<Vec<i32>, Self::Err>>()?
+            )
+        )
+    }
+}
+
+
 
 
 #[test]
 pub fn tests() {
   pub fn run(test: &str) -> Vec<i32> {
-    let mut program = test.split(',').map(|s| s.parse::<i32>().unwrap()).collect();
-    run_program(program)
+    let mut program : Program = test.parse().unwrap();
+    program.execute();
+    program.memory
   }
 
 assert_eq!(run("1,0,0,0,99"), vec![2,0,0,0,99]);
