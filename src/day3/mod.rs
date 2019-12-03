@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::collections::HashSet;
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -46,19 +47,6 @@ fn post_load(lines: Vec<String>) {
 
 }
 
-struct SpaceMarker {
-    inner: Vec<RelativeLine>,
-    index: usize,
-    x: usize,
-    y: usize,
-}
-
-impl SpaceMarker {
-    fn mark(&mut self, space: &mut HashMap<Coordinate, State>) {
-        //
-    }
-}
-
 #[derive(Hash, PartialEq, Eq, Clone, Copy)]
 struct Coordinate {
     x: i32,
@@ -85,9 +73,7 @@ impl RelativeLine {
         let mut pts = vec![];
         for i in 0..self.distance {
             match self.direction {
-                Direction::Up => {
-                    y = y + 1;
-                }
+                Direction::Up => y = y + 1,
                 Direction::Right => x = x + 1,
                 Direction::Left => x = x - 1,
                 Direction::Down => y = y - 1,
@@ -120,7 +106,6 @@ impl FromStr for RelativeLine {
     fn from_str(input: &str) -> Result<RelativeLine, Self::Err> {
         let (dir, dist) = input.split_at(1);
         let distance = dist.parse::<i32>().unwrap();
-        // println!("{} -> {}", dir, distance);
         let direction = match dir {
             "U" => Direction::Up,
             "D" => Direction::Down,
@@ -134,23 +119,16 @@ impl FromStr for RelativeLine {
 
 
 fn part1(lines: &Vec<String>) {
-    let mut space: HashMap<Coordinate, State> = HashMap::new();
-    let b : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0].split(',').map(|l| l.parse::<RelativeLine>()).collect();
-    let bert = b.unwrap();
+    let mut a_points: HashSet<Coordinate> = HashSet::new();
+    let a : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0].split(',').map(|l| l.parse::<RelativeLine>()).collect();
+    let a = a.unwrap();
 
     let mut x : i32 = 0;
     let mut y : i32 = 0;
-    bert.iter().for_each(|r| {
+    a.iter().for_each(|r| {
         let points = r.extract_points(x, y);
         points.iter().for_each(|p| {
-            space.entry(*p).and_modify(|e| {
-                match e {
-                    State::Unvisited => *e = State::Bert,
-                    State::Bert => (),
-                    State::Ernie => *e = State::Both,
-                    State::Both => (),
-                }
-            }).or_insert(State::Bert);
+            a_points.insert(*p);
         });
         let (u, v) = r.end(x, y);
         x = u;
@@ -159,36 +137,36 @@ fn part1(lines: &Vec<String>) {
 
     x = 0;
     y = 0;
-    let e : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[1].split(',').map(|l| l.parse::<RelativeLine>()).collect();
-    let ernie = e.unwrap();
-    ernie.iter().for_each(|r| {
+    let mut b_points: HashSet<Coordinate> = HashSet::new();
+    let b : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[1].split(',').map(|l| l.parse::<RelativeLine>()).collect();
+    let b = b.unwrap();
+    b.iter().for_each(|r| {
         let points = r.extract_points(x, y);
         points.iter().for_each(|p| {
-            space.entry(*p).and_modify(|e| {
-                match e {
-                    State::Unvisited => *e = State::Ernie,
-                    State::Bert => *e = State::Both,
-                    State::Ernie => (),
-                    State::Both => (),
-                }
-            }).or_insert(State::Ernie);
+            b_points.insert(*p);
         });
         let (u, v) = r.end(x, y);
         x = u;
         y = v;
     });
-    let candidates : i32 = space.iter().filter(|(c, s)| **s == State::Both).map(|(Coordinate{x, y}, _)| x.abs() + y.abs() ).fold(10000, |highest, current| {
+    let best : i32 = a_points.intersection(&b_points).map(|Coordinate{x, y} | x.abs() + y.abs()).fold(10000, |highest, current| {
         if current < highest {
             current 
         } else {
             highest
         }
     });
-    println!("candidate distances {:?}", candidates);
-    println!("Part 1: {}", 0);
+    println!("Part 1: {}", best);
     
 }
 
 fn part2(lines: &Vec<String>) {
+    let mut space: HashMap<Coordinate, i32> = HashMap::new();
+    let a : Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0].split(',').map(|l| l.parse::<RelativeLine>()).collect();
+    let a = a.unwrap();
+
+    let mut x : i32 = 0;
+    let mut y : i32 = 0;
+    a.iter().for_each(|r| {});
     println!("Part 2: {}", 0);
 }
