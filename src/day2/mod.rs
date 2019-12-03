@@ -124,6 +124,7 @@ impl Program {
                 },
                 _ => {
                     self.status = RunStatus::Killed;
+                    break;
                 }
             }
             ticks = ticks + 1;
@@ -167,9 +168,6 @@ impl FromStr for Program {
         )
     }
 }
-
-
-
 
 #[test]
 pub fn tests() {
