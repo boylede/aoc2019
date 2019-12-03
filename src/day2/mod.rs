@@ -72,8 +72,21 @@ fn part2(lines: &Vec<String>) {
 struct Program {
     counter: usize,
     cycles: usize,
-    running: bool,
+    status: RunStatus,
     memory: Vec<i32>,
+}
+
+#[derive(Clone, PartialEq)]
+enum RunStatus {
+    Running,
+    Finished,
+    Killed,
+}
+
+impl RunStatus {
+    fn running(&self) -> bool {
+        *self == RunStatus::Running
+    }
 }
 
 impl Program {
@@ -85,28 +98,13 @@ impl Program {
         Program {
             counter: 0,
             cycles: 0,
-            running: true,
+            status: RunStatus::Running,
             memory,
         }
     }
-    // fn step(&mut self, ticks: usize) {
-        
-    // }
-    fn get_offset(&self, offset: usize) -> i32 {
-        self.memory[self.counter + offset]
-    }
-    fn get_indirect(&self, offset: usize) -> i32 {
-        self.memory[self.get_offset(offset) as usize]
-    }
-    fn set_indirect(&mut self, offset: usize, value: i32) {
-        let index = self.memory[self.counter + offset];
-        self.set(index as usize, value);
-    }
-    fn set(&mut self, index: usize, value: i32) {
-        self.memory[index] = value; 
-    }
-    fn execute(&mut self) {
-        loop {
+    fn step(&mut self, steps: usize) {
+        let mut ticks = 0;
+        while steps > ticks {
             match self.memory[self.counter] {
                 1 => {
                     let a = self.get_indirect(1);
@@ -121,15 +119,34 @@ impl Program {
                     self.counter = self.counter + 4;
                 },
                 99 => {
+                    self.status = RunStatus::Finished;
                     break;
                 },
                 _ => {
-                    panic!("Program halted at unexpected input");
+                    self.status = RunStatus::Killed;
                 }
             }
+            ticks = ticks + 1;
         }
-        self.cycles = self.counter;
-        self.running = false;
+        self.cycles = self.cycles + ticks;
+    }
+    fn get_offset(&self, offset: usize) -> i32 {
+        self.memory[self.counter + offset]
+    }
+    fn get_indirect(&self, offset: usize) -> i32 {
+        self.memory[self.get_offset(offset) as usize]
+    }
+    fn set_indirect(&mut self, offset: usize, value: i32) {
+        let index = self.memory[self.counter + offset];
+        self.set(index as usize, value);
+    }
+    fn set(&mut self, index: usize, value: i32) {
+        self.memory[index] = value; 
+    }
+    fn execute(&mut self) {
+        while self.status.running() {
+            self.step(100);
+        }
     }
     fn output(&self) -> i32 {
         self.memory[0]
