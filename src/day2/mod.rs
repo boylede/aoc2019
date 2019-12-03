@@ -14,8 +14,8 @@ pub fn load(days_array: &mut Vec<Day>) {
 pub fn run(input: File) {
     println!("loading day {} input.", DAY);
     let a_time = time::precise_time_ns();
-    
-    let mut lines = vec!();
+
+    let mut lines = vec![];
     {
         let mut lines_iterator = BufReader::new(&input).lines();
         while let Some(Ok(line)) = lines_iterator.next() {
@@ -29,9 +29,8 @@ pub fn run(input: File) {
     } else {
         println!("Loading took: {}ns", total_time);
     }
-    
-    post_load(lines);
 
+    post_load(lines);
 }
 
 fn post_load(lines: Vec<String>) {
@@ -42,11 +41,10 @@ fn post_load(lines: Vec<String>) {
     let c_time = time::precise_time_ns();
     println!("Day {} Part 1 took: {}ns", DAY, b_time - a_time);
     println!("Day {} Part 2 took: {}ns", DAY, c_time - b_time);
-
 }
 
 fn part1(lines: &Vec<String>) {
-    let mut program : Program = lines[0].parse().unwrap();
+    let mut program: Program = lines[0].parse().unwrap();
     program.load_input(12, 2);
     program.execute();
     let value = program.output();
@@ -54,7 +52,7 @@ fn part1(lines: &Vec<String>) {
 }
 
 fn part2(lines: &Vec<String>) {
-    let program : Program = lines[0].parse().unwrap();
+    let program: Program = lines[0].parse().unwrap();
     for noun in 0..=99 {
         for verb in 0..=99 {
             let mut attempt = program.clone();
@@ -111,17 +109,17 @@ impl Program {
                     let b = self.get_indirect(2);
                     self.set_indirect(3, a + b);
                     self.counter = self.counter + 4;
-                },
+                }
                 2 => {
                     let a = self.get_indirect(1);
                     let b = self.get_indirect(2);
                     self.set_indirect(3, a * b);
                     self.counter = self.counter + 4;
-                },
+                }
                 99 => {
                     self.status = RunStatus::Finished;
                     break;
-                },
+                }
                 _ => {
                     self.status = RunStatus::Killed;
                     break;
@@ -142,7 +140,7 @@ impl Program {
         self.set(index as usize, value);
     }
     fn set(&mut self, index: usize, value: i32) {
-        self.memory[index] = value; 
+        self.memory[index] = value;
     }
     fn execute(&mut self) {
         while self.status.running() {
@@ -154,32 +152,31 @@ impl Program {
     }
 }
 
-
 impl FromStr for Program {
     type Err = std::num::ParseIntError;
     fn from_str(input: &str) -> Result<Program, Self::Err> {
-        Ok(
-            Program::new(
-                input
+        Ok(Program::new(
+            input
                 .split_terminator(',')
                 .map(|num| num.parse::<i32>())
-                .collect::<Result<Vec<i32>, Self::Err>>()?
-            )
-        )
+                .collect::<Result<Vec<i32>, Self::Err>>()?,
+        ))
     }
 }
 
 #[test]
 pub fn tests() {
-  pub fn run(test: &str) -> Vec<i32> {
-    let mut program : Program = test.parse().unwrap();
-    program.execute();
-    program.memory
-  }
+    pub fn run(test: &str) -> Vec<i32> {
+        let mut program: Program = test.parse().unwrap();
+        program.execute();
+        program.memory
+    }
 
-assert_eq!(run("1,0,0,0,99"), vec![2,0,0,0,99]);
-assert_eq!(run("2,3,0,3,99"), vec![2,3,0,6,99]);
-assert_eq!(run("2,4,4,5,99,0"), vec![2,4,4,5,99,9801]);
-assert_eq!(run("1,1,1,4,99,5,6,0,99"), vec![30,1,1,4,2,5,6,0,99]);
-
+    assert_eq!(run("1,0,0,0,99"), vec![2, 0, 0, 0, 99]);
+    assert_eq!(run("2,3,0,3,99"), vec![2, 3, 0, 6, 99]);
+    assert_eq!(run("2,4,4,5,99,0"), vec![2, 4, 4, 5, 99, 9801]);
+    assert_eq!(
+        run("1,1,1,4,99,5,6,0,99"),
+        vec![30, 1, 1, 4, 2, 5, 6, 0, 99]
+    );
 }
