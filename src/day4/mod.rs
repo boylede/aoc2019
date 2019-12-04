@@ -2,6 +2,53 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
+
+fn adjacency(password: u32) -> bool {
+    let st: String = password.to_string();
+    let mut last_digit = 0;
+    for ch in st.chars() {
+        let digit = ch.to_string().parse::<u8>().unwrap();
+        if digit == last_digit {
+            return true;
+        }
+        last_digit = digit;
+    }
+    false
+}
+
+fn single_adjacency(password: u32) -> bool {
+    let st: String = password.to_string();
+    let mut last_digit = 0;
+    let mut runs: Vec<u8> = vec![];
+    let mut run_length = 0;
+    for ch in st.chars() {
+        let digit = ch.to_string().parse::<u8>().unwrap();
+        if digit == last_digit {
+            run_length = run_length + 1;
+        } else {
+            runs.push(run_length);
+            run_length = 0;
+        }
+        last_digit = digit;
+    }
+    runs.push(run_length);
+    runs.iter().any(|l| *l == 1)
+}
+
+fn increasing(password: u32) -> bool {
+    let st: String = password.to_string();
+    let mut last_digit = 0;
+    for ch in st.chars() {
+        let digit = ch.to_string().parse::<u8>().unwrap();
+        if digit > last_digit {
+            last_digit = digit
+        } else if digit < last_digit {
+            return false;
+        }
+    }
+    return true;
+}
+
 fn part1(lines: &Vec<String>) {
     let range: Vec<u32> = lines[0]
         .split('-')
@@ -72,50 +119,4 @@ fn post_load(lines: Vec<String>) {
     let c_time = time::precise_time_ns();
     println!("Day {} Part 1 took: {}ns", DAY, b_time - a_time);
     println!("Day {} Part 2 took: {}ns", DAY, c_time - b_time);
-}
-
-fn adjacency(password: u32) -> bool {
-    let st: String = password.to_string();
-    let mut last_digit = 0;
-    for ch in st.chars() {
-        let digit = ch.to_string().parse::<u8>().unwrap();
-        if digit == last_digit {
-            return true;
-        }
-        last_digit = digit;
-    }
-    false
-}
-
-fn single_adjacency(password: u32) -> bool {
-    let st: String = password.to_string();
-    let mut last_digit = 0;
-    let mut runs: Vec<u8> = vec![];
-    let mut run_length = 0;
-    for ch in st.chars() {
-        let digit = ch.to_string().parse::<u8>().unwrap();
-        if digit == last_digit {
-            run_length = run_length + 1;
-        } else {
-            runs.push(run_length);
-            run_length = 0;
-        }
-        last_digit = digit;
-    }
-    runs.push(run_length);
-    runs.iter().any(|l| *l == 1)
-}
-
-fn increasing(password: u32) -> bool {
-    let st: String = password.to_string();
-    let mut last_digit = 0;
-    for ch in st.chars() {
-        let digit = ch.to_string().parse::<u8>().unwrap();
-        if digit > last_digit {
-            last_digit = digit
-        } else if digit < last_digit {
-            return false;
-        }
-    }
-    return true;
 }
