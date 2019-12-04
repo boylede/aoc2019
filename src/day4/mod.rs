@@ -1,9 +1,38 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::str::FromStr;
+
+fn part1(lines: &Vec<String>) {
+    let range: Vec<u32> = lines[0]
+        .split('-')
+        .map(|s| s.parse::<u32>().unwrap())
+        .collect();
+    let lower = range[0];
+    let upper = range[1];
+    let mut potential_matches = vec![];
+    for attempt in lower..=upper {
+        if increasing(attempt) && adjacency(attempt) {
+            potential_matches.push(attempt);
+        }
+    }
+    println!("Part 1: {}", potential_matches.len());
+}
+
+fn part2(lines: &Vec<String>) {
+    let range: Vec<u32> = lines[0]
+        .split('-')
+        .map(|s| s.parse::<u32>().unwrap())
+        .collect();
+    let lower = range[0];
+    let upper = range[1];
+    let mut potential_matches = vec![];
+    for attempt in lower..=upper {
+        if increasing(attempt) && single_adjacency(attempt) {
+            potential_matches.push(attempt);
+        }
+    }
+    println!("Part 2: {}", potential_matches.len());
+}
 
 use aoc2019::Day;
 
@@ -89,30 +118,4 @@ fn increasing(password: u32) -> bool {
         }
     }
     return true;
-}
-
-fn part1(lines: &Vec<String>) {
-    let range : Vec<u32> = lines[0].split('-').map(|s| s.parse::<u32>().unwrap()).collect();
-    let lower = range[0];
-    let upper = range[1];
-    let mut potential_matches = vec![];
-    for attempt in lower..=upper {
-        if adjacency(attempt) && increasing(attempt) {
-            potential_matches.push(attempt);
-        }
-    }
-    println!("Part 1: {}", potential_matches.len());
-}
-
-fn part2(lines: &Vec<String>) {
-    let range : Vec<u32> = lines[0].split('-').map(|s| s.parse::<u32>().unwrap()).collect();
-    let lower = range[0];
-    let upper = range[1];
-    let mut potential_matches = vec![];
-    for attempt in lower..=upper {
-        if increasing(attempt) && single_adjacency(attempt){
-            potential_matches.push(attempt);
-        }
-    }
-    println!("Part 2: {}", potential_matches.len());
 }
