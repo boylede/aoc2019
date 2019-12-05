@@ -44,8 +44,17 @@ This one was short. It really highlights how quickly some people solve these thi
 
 With my input this runs for about 130ms per part. Since the problem is brute-force by nature, I didn't think there would be much I could do to reduce this other than to go multi-threaded. It turns out I was way wrong. Looking at it while waiting for Day 5 to open up, I realized I had a bunch of extra steps in it to transform the u32 to a string, to a vec of u8, and then to iterate over that vec. Creating an iterator over the digits of a number directly lead to an order of magnitude speed-up. Each part takes about 2ms now.
 
-
 |||
 | --|-- |
 |Part One | 2.01 ms|
 |Part Two | 2.69 ms|
+
+## Day Five
+Time to complete: 00:29:24
+
+For this day my part2 rank was 233, my personal best. 
+
+|||
+| --|-- |
+|Part One | 0.48 ms|
+|Part Two | 0.44 ms|
