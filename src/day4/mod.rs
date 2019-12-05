@@ -2,27 +2,45 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-
-fn adjacency(password: u32) -> bool {
-    let st: String = password.to_string();
-    let mut last_digit = 0;
-    for ch in st.chars() {
-        let digit = ch.to_string().parse::<u8>().unwrap();
-        if digit == last_digit {
-            return true;
-        }
-        last_digit = digit;
-    }
-    false
+#[derive(Copy, Clone)]
+struct Digits {
+    number: u32,
+    place: u32,
 }
 
-fn single_adjacency(password: u32) -> bool {
-    let st: String = password.to_string();
+impl Digits {
+    fn new(number: u32) -> Digits {
+        Digits {
+            number,
+            place: 100_000,
+        }
+    }
+}
+
+impl Iterator for Digits {
+    type Item = u8;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.place == 0 {
+            return None;
+        }
+        let mut digit = self.number / self.place;
+        self.place = self.place / 10;
+        digit = digit % 10;
+        Some(digit as u8)
+    }
+}
+
+#[inline]
+fn adjacency(password: &Digits) -> bool {
+    password.zip(password.skip(1)).any(|(a, b)| a == b)
+}
+
+#[inline]
+fn single_adjacency(password: &Digits) -> bool {
     let mut last_digit = 0;
     let mut runs: Vec<u8> = vec![];
     let mut run_length = 0;
-    for ch in st.chars() {
-        let digit = ch.to_string().parse::<u8>().unwrap();
+    for digit in *password {
         if digit == last_digit {
             run_length = run_length + 1;
         } else {
@@ -35,18 +53,9 @@ fn single_adjacency(password: u32) -> bool {
     runs.iter().any(|l| *l == 1)
 }
 
-fn increasing(password: u32) -> bool {
-    let st: String = password.to_string();
-    let mut last_digit = 0;
-    for ch in st.chars() {
-        let digit = ch.to_string().parse::<u8>().unwrap();
-        if digit > last_digit {
-            last_digit = digit
-        } else if digit < last_digit {
-            return false;
-        }
-    }
-    return true;
+#[inline]
+fn increasing(password: &Digits) -> bool {
+    password.zip(password.skip(1)).all(|(a, b)| a <= b)
 }
 
 fn part1(lines: &Vec<String>) {
@@ -56,13 +65,12 @@ fn part1(lines: &Vec<String>) {
         .collect();
     let lower = range[0];
     let upper = range[1];
-    let mut potential_matches = vec![];
-    for attempt in lower..=upper {
-        if increasing(attempt) && adjacency(attempt) {
-            potential_matches.push(attempt);
-        }
-    }
-    println!("Part 1: {}", potential_matches.len());
+    let potential_matches = (lower..=upper)
+        .map(|n| Digits::new(n))
+        .filter(increasing)
+        .filter(adjacency)
+        .count();
+    println!("Part 1: {}", potential_matches);
 }
 
 fn part2(lines: &Vec<String>) {
@@ -72,13 +80,13 @@ fn part2(lines: &Vec<String>) {
         .collect();
     let lower = range[0];
     let upper = range[1];
-    let mut potential_matches = vec![];
-    for attempt in lower..=upper {
-        if increasing(attempt) && single_adjacency(attempt) {
-            potential_matches.push(attempt);
-        }
-    }
-    println!("Part 2: {}", potential_matches.len());
+    let potential_matches = (lower..=upper)
+    .map(|n| Digits::new(n))
+    .filter(increasing)
+    .filter(single_adjacency)
+    .count();
+
+    println!("Part 2: {}", potential_matches);
 }
 
 use aoc2019::Day;

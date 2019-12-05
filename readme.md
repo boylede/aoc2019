@@ -40,10 +40,12 @@ The ironic part was, the machinery I had culled from part1 will be perfect for t
 ## Day Four
 Time to complete: 00:28:44 - My PR!
 
-This one was short. It really highlights how quickly some people solve these things, the slowest leaderboard-placing entry was 6:25. I don't think I finished writing the wrapper function in that time, much less the actual criteria-checking functions. With my input this runs for about 130ms per part. Since it is brute-force by nature, I'm not sure there is much I can change to increase speed without making it multi-threaded. That would actually be a relatively easy change; I might do that in order to get my feet wet in parallel code. Only the primary for loop needs to be changed to an iterator with a filter, then I can use Rust's par_iter.
+This one was short. It really highlights how quickly some people solve these things, the slowest leaderboard-placing entry was 6:25. I don't think I finished writing the wrapper function in that time, much less the actual criteria-checking functions.
+
+With my input this runs for about 130ms per part. Since the problem is brute-force by nature, I didn't think there would be much I could do to reduce this other than to go multi-threaded. It turns out I was way wrong. Looking at it while waiting for Day 5 to open up, I realized I had a bunch of extra steps in it to transform the u32 to a string, to a vec of u8, and then to iterate over that vec. Creating an iterator over the digits of a number directly lead to an order of magnitude speed-up. Each part takes about 2ms now.
+
 
 |||
 | --|-- |
-|Part One | 130.24 ms|
-|Part Two | 123.40 ms|
-
+|Part One | 2.01 ms|
+|Part Two | 2.69 ms|
