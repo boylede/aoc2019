@@ -97,7 +97,7 @@ impl Program {
                     self.counter = self.counter + 2;
                 }
                 4 => {
-                    let output = self.get_indirect(1);
+                    let output = self.get_parameter(1);
                     self.output.push(output);
                     self.counter = self.counter + 2;
                 }
