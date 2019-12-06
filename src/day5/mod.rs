@@ -35,15 +35,20 @@ struct Program {
 }
 
 #[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 enum RunStatus {
     Running,
     Finished,
     Killed,
+    Blocked,
 }
 
 impl RunStatus {
     fn running(&self) -> bool {
         *self == RunStatus::Running
+    }
+    fn blocked(&self) -> bool {
+        *self == RunStatus::Blocked
     }
 }
 
@@ -92,9 +97,14 @@ impl Program {
                     self.counter = self.counter + 4;
                 }
                 3 => {
-                    let input = self.input.pop().unwrap();
-                    self.set_indirect(1, input);
-                    self.counter = self.counter + 2;
+                    let input = self.input.pop();
+                    if let Some(value) = input {
+                        self.set_indirect(1, value);
+                        self.counter = self.counter + 2;
+                    } else {
+                        self.status = RunStatus::Blocked;
+                        break;
+                    }
                 }
                 4 => {
                     let output = self.get_parameter(1);
@@ -173,6 +183,12 @@ impl Program {
     }
     fn set(&mut self, index: usize, value: i32) {
         self.memory[index] = value;
+    }
+    fn r#continue(&mut self) {
+        if self.status.blocked() && self.input.len() > 0 {
+            self.status = RunStatus::Running;
+        }
+        self.execute();
     }
     fn execute(&mut self) {
         while self.status.running() {
