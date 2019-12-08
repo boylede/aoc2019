@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::str::FromStr;
+use std::collections::VecDeque;
 
 use aoc2019::Day;
 
@@ -18,49 +19,108 @@ fn part1(lines: &Vec<String>) {
             let m = 5 - i;
             setting.push(my_values.remove(phase % m));
         }
-        print!("trying {:?}", setting);
+        // print!("trying {:?}", setting);
 
         let mut amplifiers = vec![];
         for i in 0..=4 {
             let mut amp = Program::new(amp_driver.clone());
             amp.id = i;
-            amplifiers.push(amp)
+            amp.init_single();
+            amplifiers.push(amp);
         }
         let mut last_output: i32 = 0;
         for amp in &mut amplifiers {
-            // print!("running amp {} with phase {} and input {}, ", amp.id, setting[setting.len()-1], last_output);
-            amp.input(last_output);
+            // print!("running amp {} with phase {} and input {}, ", amp.id, setting[setting.len()-1], last_output)
             amp.input(setting.pop().unwrap());
+            amp.input(last_output);
             // println!("first amp status: {:?}", amp.status);
             amp.execute();
-            if amp.output.len() != 1 {
-                println!("amp status: {:?}", amp.status);
-                panic!("incorrect output from program {:?}", amp.output);
+            if let Some(value) = amp.output() {
+                last_output = value;
+                // println!("got value {}", value);
+                
             } else {
-                last_output = amp.output.pop().unwrap();
-                // println!("got output {}.", last_output);
+                panic!("intcode program didn't provide expected output");
             }
         }
         if last_output > best {
             best = last_output;
         }
-        println!(" = {}", last_output);
+        // println!(" = {}", last_output);
     }
     
-    
-    
-   
     println!("Part 1: {}", best);
 }
 
 fn part2(lines: &Vec<String>) {
+    let Program{memory: amp_driver, ..} = lines[0].parse().unwrap();
+    let phase_values = vec![5,6,7,8,9];
+    let mut best = 0;
+    for phase in 0..5*4*3*2 {
+        let mut my_values = phase_values.clone();
+        let mut setting = vec![];
+        for i in 0..5 {
+            let m = 5 - i;
+            setting.push(my_values.remove(phase % m));
+        }
+        println!("trying {:?}", setting);
+
+        let mut amplifiers = vec![];
+        for i in 0..=4 {
+            let mut amp = Program::new(amp_driver.clone());
+            amp.id = i;
+            // amp.init_single();
+            amplifiers.push(amp);
+        }
+        
+        let mut phases = setting.clone();
+        for amp in &mut amplifiers {
+            // println!("running amp {} with phase {}, ", amp.id, setting[setting.len()-1]);
+            amp.input = Some(VecDeque::new());
+            amp.input(phases.pop().unwrap());
+            amp.output = Some(VecDeque::new());
+            amp.execute();
+        }
+        let mut last_output = 0;
+        let mut queue: VecDeque<i32> = VecDeque::new();
+        queue.push_back(last_output);
+        let mut last_queue = Some(queue);
+
+        while amplifiers.iter().any(running) {
+            for current in &mut amplifiers {
+                print!("running amp {} with input {:?}", current.id, last_queue);
+                current.input = last_queue.take();
+                current.output = Some(VecDeque::new());
+                current.r#continue();
+                let mut queue = current.output.take();
+                if queue.is_some() && queue.as_ref().map(|s| s.len()).unwrap() > 0 {
+                    let fuck = queue.take();
+                    let fuck = fuck.unwrap();
+                    last_output = fuck[0];
+                    queue = Some(fuck);
+                    print!("got output: {:?}", queue);
+                } else {
+                    print!("got no output.")
+                }
+                println!("{:?}", current.status);
+                last_queue = queue.take();
+            }
+        }
+        
+        if last_output > best {
+            best = last_output;
+        }
+        println!("result: {:?} = {}", setting, last_output);
+    }
     
-    println!("Part 2: {:?}", 0);
+    println!("Part 2: {:?}", best);
 }
 
 
 
-
+fn running(p: &Program) -> bool {
+    p.status.unfinished()
+}
 
 
 
@@ -73,8 +133,8 @@ struct Program {
     cycles: usize,
     status: RunStatus,
     memory: Vec<i32>,
-    input: Vec<i32>,
-    output: Vec<i32>,
+    input: Option<VecDeque<i32>>,
+    output: Option<VecDeque<i32>>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -91,6 +151,9 @@ impl RunStatus {
     }
     fn blocked(&self) -> bool {
         *self == RunStatus::Blocked
+    }
+    fn unfinished(&self) -> bool {
+        self.running() || self.blocked()
     }
 }
 
@@ -114,16 +177,49 @@ impl Program {
             cycles: 0,
             status: RunStatus::Running,
             memory,
-            input: vec![],
-            output: vec![],
+            input: None,
+            output: None,
         }
     }
+    fn init_single(&mut self) {
+        match self.input {
+            Some(_) => {
+                panic!("tried to initialize twice");
+            },
+            None => {
+                self.input = Some(VecDeque::new());
+            }
+        }
+        match self.output {
+            Some(_) => {
+                panic!("tried to initialize twice");
+            },
+            None => {
+                self.output = Some(VecDeque::new());
+            }
+        }
+    }
+
     fn input(&mut self, value: i32) {
-        self.input.push(value);
+        if let Some(input) = &mut self.input {
+            input.push_back(value);
+        } else {
+            panic!("tried to add input while buffer was moved");
+        }
+    }
+    fn output(&mut self) -> Option<i32> {
+        if let Some(output) = &mut self.output {
+            output.pop_front()
+        } else {
+            panic!("tried to add input while buffer was moved");
+        }
     }
 
     fn step(&mut self, steps: usize) {
         let mut ticks = 0;
+        // let input = self.input.as_ref().expect("tried to use program while input buffer was moved");
+        // let output = self.output.as_ref().expect("tried to use program while output buffer was moved");
+
         while steps > ticks {
             // print!("{}: ", self.counter);
             let instruction = self.memory[self.counter];
@@ -140,14 +236,15 @@ impl Program {
                     // print!("mul ");
                     let a = self.get_parameter(1);
                     let b = self.get_parameter(2);
+                    // print!(" -> ");
                     self.set_indirect(3, a * b);
                     self.counter = self.counter + 4;
                 }
                 3 => {
                     // print!("pop ");
-                    let input = self.input.pop();
+                    let input = &self.input.as_mut().expect("tried to use input while backing buffer was removed").pop_front();
                     if let Some(value) = input {
-                        self.set_indirect(1, value);
+                        self.set_indirect(1, *value);
                         self.counter = self.counter + 2;
                     } else {
                         self.status = RunStatus::Blocked;
@@ -156,9 +253,9 @@ impl Program {
                 }
                 4 => {
                     // print!("push ");
-                    let output = self.get_parameter(1);
+                    let value = self.get_parameter(1);
                     
-                    self.output.push(output);
+                    self.output.as_mut().expect("tried to use output while backing buffer was removed").push_back(value);
                     self.counter = self.counter + 2;
                 }
                 5 => {
@@ -253,7 +350,7 @@ impl Program {
         self.memory[index] = value;
     }
     fn r#continue(&mut self) {
-        if self.status.blocked() && self.input.len() > 0 {
+        if self.status.blocked() {
             self.status = RunStatus::Running;
         }
         self.execute();
