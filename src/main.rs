@@ -14,6 +14,7 @@ mod day3;
 mod day4;
 mod day5;
 mod day6;
+mod day7;
 
 const USAGE: &'static str = "Dan Boyle's Advent of Code 2019 entries.
 	-d, --day (default 1) which day's code to run.
@@ -31,6 +32,7 @@ fn main() {
     day4::load(&mut days);
     day5::load(&mut days);
     day6::load(&mut days);
+    day7::load(&mut days);
 
     /* 	Debug Prints */
     // let mut debug_text = String::new();
