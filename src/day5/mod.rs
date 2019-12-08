@@ -9,8 +9,13 @@ const DAY: i32 = 5;
 
 fn part1(lines: &Vec<String>) {
     let mut program: Program = lines[0].parse().unwrap();
+    // program.input(1);
+    program.execute();
+    // println!("{:?}", program.status);
     program.input(1);
     program.execute();
+    // println!("{:?}", program.status);
+    // program.step(5);
     let value = program.output;
     println!("Part 1: {:?}", value);
 }
@@ -23,7 +28,6 @@ fn part2(lines: &Vec<String>) {
     println!("Part 2: {:?}", value);
 }
 
-
 #[derive(Clone)]
 struct Program {
     counter: usize,
@@ -34,7 +38,6 @@ struct Program {
     output: Vec<i32>,
 }
 
-#[derive(Clone, PartialEq)]
 #[derive(Clone, PartialEq, Debug)]
 enum RunStatus {
     Running,
@@ -85,18 +88,22 @@ impl Program {
             let instruction = self.memory[self.counter];
             match opcode(instruction) {
                 1 => {
+                    // print!("add ");
                     let a = self.get_parameter(1);
                     let b = self.get_parameter(2);
+                    // print!(" -> ");
                     self.set_indirect(3, a + b);
                     self.counter = self.counter + 4;
                 }
                 2 => {
+                    // print!("mul ");
                     let a = self.get_parameter(1);
                     let b = self.get_parameter(2);
                     self.set_indirect(3, a * b);
                     self.counter = self.counter + 4;
                 }
                 3 => {
+                    // print!("pop ");
                     let input = self.input.pop();
                     if let Some(value) = input {
                         self.set_indirect(1, value);
@@ -107,11 +114,14 @@ impl Program {
                     }
                 }
                 4 => {
+                    // print!("push ");
                     let output = self.get_parameter(1);
+                    // println!("outputting value: {}, from position: {}", output, self.counter);
                     self.output.push(output);
                     self.counter = self.counter + 2;
                 }
                 5 => {
+                    // println!("if true");
                     let condition = self.get_parameter(1);
                     let jump = self.get_parameter(2);
                     if condition != 0 {
@@ -121,6 +131,7 @@ impl Program {
                     }
                 }
                 6 => {
+                    // println!("if false");
                     let condition = self.get_parameter(1);
                     let jump = self.get_parameter(2);
                     if condition == 0 {
@@ -130,9 +141,10 @@ impl Program {
                     }
                 }
                 7 => {
+                    // print!("less than");
                     let a = self.get_parameter(1);
                     let b = self.get_parameter(2);
-                    let output = self.get_parameter(3);
+                    // let output = self.get_parameter(3);
                     if a < b {
                         self.set_indirect(3, 1);
                     } else {
@@ -141,9 +153,10 @@ impl Program {
                     self.counter = self.counter + 4;
                 }
                 8 => {
+                    // print!("greater than");
                     let a = self.get_parameter(1);
                     let b = self.get_parameter(2);
-                    let output = self.get_parameter(3);
+                    // let output = self.get_parameter(3);
                     if a == b {
                         self.set_indirect(3, 1);
                     } else {
@@ -166,31 +179,35 @@ impl Program {
     }
     fn get_parameter(&self, offset: usize) -> i32 {
         if is_immediate(self.memory[self.counter], offset) {
-            self.get_offset(offset)
+            let value = self.get_offset(offset);
+            // print!("{}i, ", value);
+            value
         } else {
-            self.get_indirect(offset)
+            let value = self.get_indirect(offset);
+            // println!("getting indirect value {} from {}", value, self.counter);
+            value
         }
     }
     fn get_offset(&self, offset: usize) -> i32 {
         self.memory[self.counter + offset]
     }
     fn get_indirect(&self, offset: usize) -> i32 {
-        self.memory[self.get_offset(offset) as usize]
+        let address = self.get_offset(offset) as usize;
+        // print!("[{}]={}, ", address, self.memory[address]);
+        self.memory[address]
     }
     fn set_indirect(&mut self, offset: usize, value: i32) {
         let index = self.memory[self.counter + offset];
+        // println!("{} @{}, ", value, index);
         self.set(index as usize, value);
     }
     fn set(&mut self, index: usize, value: i32) {
         self.memory[index] = value;
     }
-    fn r#continue(&mut self) {
+    fn execute(&mut self) {
         if self.status.blocked() && self.input.len() > 0 {
             self.status = RunStatus::Running;
         }
-        self.execute();
-    }
-    fn execute(&mut self) {
         while self.status.running() {
             self.step(100);
         }
