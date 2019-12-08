@@ -1,9 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::str::FromStr;
-use std::collections::HashMap;
-use std::collections::VecDeque;
 
 use aoc2019::Day;
 
@@ -13,9 +10,7 @@ fn part1(lines: &Vec<String>) {
     let pixels = lines[0].chars().map(|c|c.to_digit(10).unwrap()).collect::<Vec<u32>>();
     let width = 25;
     let height = 6;
-    // let layers : Vec<Vec<u32>> = Vec::new();
-    let num_layers = pixels.len() / (width * height);
-    println!("image has {} layers", num_layers);
+
     let layers = pixels.windows(width * height);
     let (_, count) = layers.fold((usize::max_value(), 0), |(num_zeros, num_sum), layer| {
         let count = layer.iter().filter(|d| **d == 0).count();
@@ -52,40 +47,20 @@ fn part2(lines: &Vec<String>) {
     let height = 6;
     let mut layers = pixels.windows(width * height).step_by(width*height);
     let num_layers = layers.clone().count();
-    println!("layers: {}", num_layers);
-    // let mut out = File::create("out_image.txt").unwrap();
     
     let mut image: Vec<u32> = Vec::from(layers.next().unwrap());
-    
-    layers.clone().enumerate().for_each(|(layer_num, layer)| {
-        // write!(out, "{}\n", layer_num);
-        let rows = layer.windows(width).step_by(width);
-        // let row_count = rows.clone().count();
-        // println!("rows in this layer: {}", row_count);
-        rows.enumerate().for_each(|(y, row)| {
-            // write!(out, "{}\t:", i);
-            row.iter().enumerate().for_each(|(x, d)| {
-                if image[x + y*width] == 2 {
-                    image[x + y*width] = *d;
-                }
-            });
-            // write!(out, "\n");
-        });
-        // write!(out, "\n");
+
+    let image = layers.fold(image, |mut image, layer| {
+        layer.iter().zip(image).map(|(layer_pixel, mut image_pixel)| {
+            if image_pixel == 2 && *layer_pixel != 2 {
+                image_pixel = *layer_pixel;
+            }
+            image_pixel
+        }).collect()
     });
-    // out.flush();
-    
-    // print_image(&image, width, height);
-    // for layer in layers {
-    //     for (i, pixel) in image.iter_mut().enumerate() {
-    //         if *pixel == 2 && layer[i] != 2 {
-    //             *pixel = layer[i];
-    //         }
-    //     }
-    //     // print_image(&Vec::from(layer), width, height);
-    // }
+
+    println!("Part 2:");
     print_image(&image, width, height);
-    println!("Part 2: {:?}", 0);
 }
 
 pub fn load(days_array: &mut Vec<Day>) {
