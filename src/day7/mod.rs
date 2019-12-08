@@ -1,24 +1,76 @@
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::str::FromStr;
-use std::collections::VecDeque;
 
 use aoc2019::Day;
 
 const DAY: i32 = 7;
 
-fn part1(lines: &Vec<String>) {
-    let Program{memory: amp_driver, ..} = lines[0].parse().unwrap();
-    let phase_values = vec![0,1,2,3,4];
-    let mut best = 0;
-    for phase in 0..5*4*3*2 {
-        let mut my_values = phase_values.clone();
-        let mut setting = vec![];
-        for i in 0..5 {
-            let m = 5 - i;
-            setting.push(my_values.remove(phase % m));
+fn count_possibilities(len: usize) -> usize {
+    let mut result = len;
+    let mut counter = len - 1;
+    while counter > 1 {
+        result = result * counter;
+        counter = counter - 1;
+    }
+    result
+}
+
+fn all_possibilities(mut values: Vec<i32>) -> Vec<Vec<i32>> {
+    let mut all = vec![];
+    if values.len() == 2 {
+        let len = 2;
+        for p_index in 0..len {
+            let mut my_values = values.clone();
+            let mut p = vec![];
+
+            for i in 0..values.len() {
+                let d_index = p_index % my_values.len();
+
+                // print!("{}-", d_index);
+                p.push(my_values.remove(d_index));
+            }
+            if all.contains(&p) {
+                // println!("duplicate {:?} at {}",p, p_index);
+            } else {
+                // println!(": {}: {:?}", p_index, p);
+                all.push(p);
+            }
         }
+    } else {
+        let digit = values.pop().unwrap();
+        let some = all_possibilities(values);
+        println!("{:?}", some);
+        for p in some {
+            for i in 0..=p.len() {
+                let mut new = p.clone();
+                new.insert(i, digit);
+                all.push(new);
+            }
+        }
+    }
+    all
+}
+
+fn part1(lines: &Vec<String>) {
+    let phases = all_possibilities(vec![0, 1, 2, 3, 4]);
+    for (i, p) in phases.iter().enumerate() {
+        println!("{}: {:?}", i, p);
+    }
+    // return;
+    let Program {
+        memory: amp_driver, ..
+    } = lines[0].parse().unwrap();
+    let mut best = 0;
+    for phase in 0..5 * 4 * 3 * 2 {
+        // let mut my_values = phase_values.clone();
+        let mut setting = phases[phase].clone();
+        // for i in 0..5 {
+        //     let m = 5 - i;
+        //     setting.push(my_values.remove(phase % m));
+        // }
         // print!("trying {:?}", setting);
 
         let mut amplifiers = vec![];
@@ -37,8 +89,7 @@ fn part1(lines: &Vec<String>) {
             amp.execute();
             if let Some(value) = amp.output() {
                 last_output = value;
-                // println!("got value {}", value);
-                
+            // println!("got value {}", value);
             } else {
                 panic!("intcode program didn't provide expected output");
             }
@@ -48,22 +99,25 @@ fn part1(lines: &Vec<String>) {
         }
         // println!(" = {}", last_output);
     }
-    
+
     println!("Part 1: {}", best);
 }
 
 fn part2(lines: &Vec<String>) {
-    let Program{memory: amp_driver, ..} = lines[0].parse().unwrap();
-    let phase_values = vec![5,6,7,8,9];
+    let phases = all_possibilities(vec![5, 6, 7, 8, 9]);
+    let Program {
+        memory: amp_driver, ..
+    } = lines[0].parse().unwrap();
+    // let phase_values = vec![5, 6, 7, 8, 9];
     let mut best = 0;
-    for phase in 0..5*4*3*2 {
-        let mut my_values = phase_values.clone();
-        let mut setting = vec![];
-        for i in 0..5 {
-            let m = 5 - i;
-            setting.push(my_values.remove(phase % m));
-        }
-        println!("trying {:?}", setting);
+    for phase in 0..5 * 4 * 3 * 2 {
+        // let mut my_values = phase_values.clone();
+        let setting = phases[phase].clone();
+        // for i in 0..5 {
+        //     let m = 5 - i;
+        //     setting.push(my_values.remove(phase % m));
+        // }
+        // println!("trying {:?}", setting);
 
         let mut amplifiers = vec![];
         for i in 0..=4 {
@@ -72,7 +126,7 @@ fn part2(lines: &Vec<String>) {
             // amp.init_single();
             amplifiers.push(amp);
         }
-        
+
         let mut phases = setting.clone();
         for amp in &mut amplifiers {
             // println!("running amp {} with phase {}, ", amp.id, setting[setting.len()-1]);
@@ -88,7 +142,7 @@ fn part2(lines: &Vec<String>) {
 
         while amplifiers.iter().any(running) {
             for current in &mut amplifiers {
-                print!("running amp {} with input {:?}", current.id, last_queue);
+                // print!("running amp {} with input {:?}", current.id, last_queue);
                 current.input = last_queue.take();
                 current.output = Some(VecDeque::new());
                 current.r#continue();
@@ -98,33 +152,27 @@ fn part2(lines: &Vec<String>) {
                     let fuck = fuck.unwrap();
                     last_output = fuck[0];
                     queue = Some(fuck);
-                    print!("got output: {:?}", queue);
+                // print!("got output: {:?}", queue);
                 } else {
-                    print!("got no output.")
+                    // print!("got no output.")
                 }
-                println!("{:?}", current.status);
+                // println!("{:?}", current.status);
                 last_queue = queue.take();
             }
         }
-        
+
         if last_output > best {
             best = last_output;
         }
         println!("result: {:?} = {}", setting, last_output);
     }
-    
+
     println!("Part 2: {:?}", best);
 }
-
-
 
 fn running(p: &Program) -> bool {
     p.status.unfinished()
 }
-
-
-
-
 
 #[derive(Clone)]
 struct Program {
@@ -185,7 +233,7 @@ impl Program {
         match self.input {
             Some(_) => {
                 panic!("tried to initialize twice");
-            },
+            }
             None => {
                 self.input = Some(VecDeque::new());
             }
@@ -193,7 +241,7 @@ impl Program {
         match self.output {
             Some(_) => {
                 panic!("tried to initialize twice");
-            },
+            }
             None => {
                 self.output = Some(VecDeque::new());
             }
@@ -242,7 +290,11 @@ impl Program {
                 }
                 3 => {
                     // print!("pop ");
-                    let input = &self.input.as_mut().expect("tried to use input while backing buffer was removed").pop_front();
+                    let input = &self
+                        .input
+                        .as_mut()
+                        .expect("tried to use input while backing buffer was removed")
+                        .pop_front();
                     if let Some(value) = input {
                         self.set_indirect(1, *value);
                         self.counter = self.counter + 2;
@@ -254,8 +306,11 @@ impl Program {
                 4 => {
                     // print!("push ");
                     let value = self.get_parameter(1);
-                    
-                    self.output.as_mut().expect("tried to use output while backing buffer was removed").push_back(value);
+
+                    self.output
+                        .as_mut()
+                        .expect("tried to use output while backing buffer was removed")
+                        .push_back(value);
                     self.counter = self.counter + 2;
                 }
                 5 => {
@@ -264,7 +319,7 @@ impl Program {
                     // print!("isn't 0, jump ");
                     let jump = self.get_parameter(2);
                     // println!("");
-                    
+
                     if condition != 0 {
                         self.counter = jump as usize;
                     } else {
@@ -277,7 +332,7 @@ impl Program {
                     // print!("is 0, jump ");
                     let jump = self.get_parameter(2);
                     // println!("");
-                    
+
                     if condition == 0 {
                         self.counter = jump as usize;
                     } else {
@@ -288,7 +343,7 @@ impl Program {
                     // print!("less than");
                     let a = self.get_parameter(1);
                     let b = self.get_parameter(2);
-                    
+
                     if a < b {
                         self.set_indirect(3, 1);
                     } else {
@@ -300,7 +355,7 @@ impl Program {
                     // print!("greater than");
                     let a = self.get_parameter(1);
                     let b = self.get_parameter(2);
-                    
+
                     if a == b {
                         self.set_indirect(3, 1);
                     } else {
@@ -329,7 +384,7 @@ impl Program {
             value
         } else {
             let value = self.get_indirect(offset);
-            
+
             value
         }
     }
@@ -377,10 +432,6 @@ impl FromStr for Program {
     }
 }
 
-
-
-
-
 pub fn load(days_array: &mut Vec<Day>) {
     days_array.push(Day::new(DAY, run));
 }
@@ -418,6 +469,4 @@ fn post_load(lines: Vec<String>) {
 }
 
 #[test]
-pub fn tests() {
-    
-}
+pub fn tests() {}
