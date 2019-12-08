@@ -35,7 +35,7 @@ fn print_image(image: &Vec<u32>, width: usize, height: usize) {
             if image[x + y * width] == 0 {
                 print!(" ");
             } else {
-                print!("W");
+                print!("█");
             }
         }
         print!("\n");

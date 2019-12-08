@@ -81,10 +81,10 @@ fn part2(lines: &Vec<String>) {
     let lower = range[0];
     let upper = range[1];
     let potential_matches = (lower..=upper)
-    .map(|n| Digits::new(n))
-    .filter(increasing)
-    .filter(single_adjacency)
-    .count();
+        .map(|n| Digits::new(n))
+        .filter(increasing)
+        .filter(single_adjacency)
+        .count();
 
     println!("Part 2: {}", potential_matches);
 }

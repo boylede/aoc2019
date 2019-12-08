@@ -40,7 +40,6 @@ fn part1(lines: &Vec<String>) {
         for i in 0..=4 {
             let mut amp = Program::new(amp_driver.clone());
             amp.id = i;
-            amp.init_single();
             amplifiers.push(amp);
         }
         let mut last_output: i32 = 0;
@@ -69,21 +68,15 @@ fn part2(lines: &Vec<String>) {
     } = lines[0].parse().unwrap();
     let mut best = 0;
     for phase in 0..5 * 4 * 3 * 2 {
-        let setting = phases[phase].clone();
-
-
         let mut amplifiers = vec![];
         for i in 0..=4 {
             let mut amp = Program::new(amp_driver.clone());
             amp.id = i;
             amplifiers.push(amp);
         }
-
-        let mut phases = setting.clone();
+        let mut setting = phases[phase].clone();
         for amp in &mut amplifiers {
-            amp.input = Some(VecDeque::new());
-            amp.input(phases.pop().unwrap());
-            amp.output = Some(VecDeque::new());
+            amp.input(setting.pop().unwrap());
             amp.execute();
         }
         let mut queue: VecDeque<i32> = VecDeque::new();
@@ -160,26 +153,8 @@ impl Program {
             cycles: 0,
             status: RunStatus::Running,
             memory,
-            input: None,
-            output: None,
-        }
-    }
-    fn init_single(&mut self) {
-        match self.input {
-            Some(_) => {
-                panic!("tried to initialize twice");
-            }
-            None => {
-                self.input = Some(VecDeque::new());
-            }
-        }
-        match self.output {
-            Some(_) => {
-                panic!("tried to initialize twice");
-            }
-            None => {
-                self.output = Some(VecDeque::new());
-            }
+            input: Some(VecDeque::new()),
+            output: Some(VecDeque::new()),
         }
     }
 
