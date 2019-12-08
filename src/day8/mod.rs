@@ -7,22 +7,25 @@ use aoc2019::Day;
 const DAY: i32 = 8;
 
 fn part1(lines: &Vec<String>) {
-    let pixels = lines[0].chars().map(|c|c.to_digit(10).unwrap()).collect::<Vec<u32>>();
+    let pixels = lines[0]
+        .chars()
+        .map(|c| c.to_digit(10).unwrap())
+        .collect::<Vec<u32>>();
     let width = 25;
     let height = 6;
 
-    let layers = pixels.windows(width * height);
+    let layers = pixels.windows(width * height).step_by(width * height);
     let (_, count) = layers.fold((usize::max_value(), 0), |(num_zeros, num_sum), layer| {
-        let count = layer.iter().filter(|d| **d == 0).count();
-        if count < num_zeros {
+        let zero_count = layer.iter().filter(|d| **d == 0).count();
+        if zero_count < num_zeros {
             let ones = layer.iter().filter(|d| **d == 1).count();
             let twos = layer.iter().filter(|d| **d == 2).count();
-            (count, ones * twos)
+            (zero_count, ones * twos)
         } else {
             (num_zeros, num_sum)
         }
     });
-   
+
     println!("Part 1: {:?}", count);
 }
 
@@ -34,7 +37,6 @@ fn print_image(image: &Vec<u32>, width: usize, height: usize) {
             } else {
                 print!("W");
             }
-            
         }
         print!("\n");
     }
@@ -42,21 +44,27 @@ fn print_image(image: &Vec<u32>, width: usize, height: usize) {
 }
 
 fn part2(lines: &Vec<String>) {
-    let pixels = lines[0].chars().map(|c|c.to_digit(10).unwrap()).collect::<Vec<u32>>();
+    let pixels = lines[0]
+        .chars()
+        .map(|c| c.to_digit(10).unwrap())
+        .collect::<Vec<u32>>();
     let width = 25;
     let height = 6;
-    let mut layers = pixels.windows(width * height).step_by(width*height);
-    let num_layers = layers.clone().count();
-    
+    let mut layers = pixels.windows(width * height).step_by(width * height);
+
     let mut image: Vec<u32> = Vec::from(layers.next().unwrap());
 
-    let image = layers.fold(image, |mut image, layer| {
-        layer.iter().zip(image).map(|(layer_pixel, mut image_pixel)| {
-            if image_pixel == 2 && *layer_pixel != 2 {
-                image_pixel = *layer_pixel;
-            }
-            image_pixel
-        }).collect()
+    image = layers.fold(image, |image, layer| {
+        layer
+            .iter()
+            .zip(image)
+            .map(|(layer_pixel, mut image_pixel)| {
+                if image_pixel == 2 && *layer_pixel != 2 {
+                    image_pixel = *layer_pixel;
+                }
+                image_pixel
+            })
+            .collect()
     });
 
     println!("Part 2:");
@@ -100,6 +108,4 @@ fn post_load(lines: Vec<String>) {
 }
 
 #[test]
-pub fn tests() {
-    
-}
+pub fn tests() {}
