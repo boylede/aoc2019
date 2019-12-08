@@ -1,50 +1,42 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::str::FromStr;
-use std::collections::HashMap;
-use std::collections::VecDeque;
 
 use aoc2019::Day;
 
 const DAY: i32 = 6;
 
 fn part1(lines: &Vec<String>) {
-    let mut relationships: HashMap<&str, &str> = HashMap::new();
-    for line in lines {
-        let rel : Vec<&str> = line.split(")").collect();
-        let child = rel[1];
-        let parent = rel[0];
-        relationships.insert(child, parent);
-        // println!("{} orbits {}", child, parent);
-    }
-    let mut count = 0;
-    for mut key in relationships.keys() {
-        while *key != "COM" {
-            // println!("{}", key);
-            key = relationships.get(key).unwrap();
-            count = count + 1;
+    let relationships : HashMap<&str, &str> = lines.iter().map(|line| {
+        let kv = line.split(")").collect::<Vec<&str>>();
+        (kv[1], kv[0])
+    }).collect();
+
+    let count = relationships.keys().fold(0, |mut total, mut k| {
+        while *k != "COM" {
+            k = relationships.get(k).unwrap();
+            total = total + 1;
         }
-    }
+        total
+    });
     println!("Part 1: {:?}", count);
 }
 
 fn part2(lines: &Vec<String>) {
-    let mut relationships: HashMap<&str, &str> = HashMap::new();
-    for line in lines {
-        let rel : Vec<&str> = line.split(")").collect();
-        let child = rel[1];
-        let parent = rel[0];
-        relationships.insert(child, parent);
-    }
+    let relationships : HashMap<&str, &str> = lines.iter().map(|line| {
+        let kv = line.split(")").collect::<Vec<&str>>();
+        (kv[1], kv[0])
+    }).collect();
+    
     let mut my_tree = vec![];
-    let mut key = "YOU"; 
+    let mut key = "YOU";
     while key != "COM" {
         key = relationships.get(key).unwrap();
         my_tree.push(key);
     }
     let mut santa_tree = vec![];
-    let mut key = "SAN"; 
+    let mut key = "SAN";
     while key != "COM" {
         key = relationships.get(key).unwrap();
         santa_tree.push(key);
@@ -54,11 +46,9 @@ fn part2(lines: &Vec<String>) {
     let mut santas = santa_tree.pop().unwrap();
 
     while *mine == *santas {
-
         mine = my_tree.pop().unwrap();
         santas = santa_tree.pop().unwrap();
     }
-
 
     println!("Part 2: {:?}", my_tree.len() + santa_tree.len() + 2);
 }
@@ -100,6 +90,4 @@ fn post_load(lines: Vec<String>) {
 }
 
 #[test]
-pub fn tests() {
-    
-}
+pub fn tests() {}
