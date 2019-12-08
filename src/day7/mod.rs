@@ -8,41 +8,16 @@ use aoc2019::Day;
 
 const DAY: i32 = 7;
 
-fn count_possibilities(len: usize) -> usize {
-    let mut result = len;
-    let mut counter = len - 1;
-    while counter > 1 {
-        result = result * counter;
-        counter = counter - 1;
-    }
-    result
-}
-
 fn all_possibilities(mut values: Vec<i32>) -> Vec<Vec<i32>> {
     let mut all = vec![];
-    if values.len() == 2 {
-        let len = 2;
-        for p_index in 0..len {
-            let mut my_values = values.clone();
-            let mut p = vec![];
-
-            for i in 0..values.len() {
-                let d_index = p_index % my_values.len();
-
-                // print!("{}-", d_index);
-                p.push(my_values.remove(d_index));
-            }
-            if all.contains(&p) {
-                // println!("duplicate {:?} at {}",p, p_index);
-            } else {
-                // println!(": {}: {:?}", p_index, p);
-                all.push(p);
-            }
-        }
+    if values.len() < 2 {
+        all.push(vec![values[0]]);
+    } else if values.len() == 2 {
+       all.push(vec![values[0], values[1]]);
+       all.push(vec![values[1], values[0]]);
     } else {
         let digit = values.pop().unwrap();
         let some = all_possibilities(values);
-        println!("{:?}", some);
         for p in some {
             for i in 0..=p.len() {
                 let mut new = p.clone();
@@ -56,23 +31,11 @@ fn all_possibilities(mut values: Vec<i32>) -> Vec<Vec<i32>> {
 
 fn part1(lines: &Vec<String>) {
     let phases = all_possibilities(vec![0, 1, 2, 3, 4]);
-    for (i, p) in phases.iter().enumerate() {
-        println!("{}: {:?}", i, p);
-    }
-    // return;
-    let Program {
-        memory: amp_driver, ..
-    } = lines[0].parse().unwrap();
+    let p: Program = lines[0].parse().unwrap();
+    let amp_driver = p.memory;
     let mut best = 0;
     for phase in 0..5 * 4 * 3 * 2 {
-        // let mut my_values = phase_values.clone();
         let mut setting = phases[phase].clone();
-        // for i in 0..5 {
-        //     let m = 5 - i;
-        //     setting.push(my_values.remove(phase % m));
-        // }
-        // print!("trying {:?}", setting);
-
         let mut amplifiers = vec![];
         for i in 0..=4 {
             let mut amp = Program::new(amp_driver.clone());
@@ -82,14 +45,11 @@ fn part1(lines: &Vec<String>) {
         }
         let mut last_output: i32 = 0;
         for amp in &mut amplifiers {
-            // print!("running amp {} with phase {} and input {}, ", amp.id, setting[setting.len()-1], last_output)
             amp.input(setting.pop().unwrap());
             amp.input(last_output);
-            // println!("first amp status: {:?}", amp.status);
             amp.execute();
             if let Some(value) = amp.output() {
                 last_output = value;
-            // println!("got value {}", value);
             } else {
                 panic!("intcode program didn't provide expected output");
             }
@@ -97,7 +57,6 @@ fn part1(lines: &Vec<String>) {
         if last_output > best {
             best = last_output;
         }
-        // println!(" = {}", last_output);
     }
 
     println!("Part 1: {}", best);
@@ -108,65 +67,45 @@ fn part2(lines: &Vec<String>) {
     let Program {
         memory: amp_driver, ..
     } = lines[0].parse().unwrap();
-    // let phase_values = vec![5, 6, 7, 8, 9];
     let mut best = 0;
     for phase in 0..5 * 4 * 3 * 2 {
-        // let mut my_values = phase_values.clone();
         let setting = phases[phase].clone();
-        // for i in 0..5 {
-        //     let m = 5 - i;
-        //     setting.push(my_values.remove(phase % m));
-        // }
-        // println!("trying {:?}", setting);
+
 
         let mut amplifiers = vec![];
         for i in 0..=4 {
             let mut amp = Program::new(amp_driver.clone());
             amp.id = i;
-            // amp.init_single();
             amplifiers.push(amp);
         }
 
         let mut phases = setting.clone();
         for amp in &mut amplifiers {
-            // println!("running amp {} with phase {}, ", amp.id, setting[setting.len()-1]);
             amp.input = Some(VecDeque::new());
             amp.input(phases.pop().unwrap());
             amp.output = Some(VecDeque::new());
             amp.execute();
         }
-        let mut last_output = 0;
         let mut queue: VecDeque<i32> = VecDeque::new();
-        queue.push_back(last_output);
+        queue.push_back(0);
         let mut last_queue = Some(queue);
 
         while amplifiers.iter().any(running) {
             for current in &mut amplifiers {
-                // print!("running amp {} with input {:?}", current.id, last_queue);
                 current.input = last_queue.take();
                 current.output = Some(VecDeque::new());
-                current.r#continue();
-                let mut queue = current.output.take();
-                if queue.is_some() && queue.as_ref().map(|s| s.len()).unwrap() > 0 {
-                    let fuck = queue.take();
-                    let fuck = fuck.unwrap();
-                    last_output = fuck[0];
-                    queue = Some(fuck);
-                // print!("got output: {:?}", queue);
-                } else {
-                    // print!("got no output.")
-                }
-                // println!("{:?}", current.status);
-                last_queue = queue.take();
+                current.execute();
+                last_queue = current.output.take();
             }
         }
-
-        if last_output > best {
-            best = last_output;
+        if let Some(mut q) = last_queue {
+            if let Some(out) = q.pop_front() {
+                if out > best {
+                    best = out;
+                }
+            }
         }
-        println!("result: {:?} = {}", setting, last_output);
     }
-
     println!("Part 2: {:?}", best);
 }
 
@@ -214,10 +153,6 @@ fn is_immediate(instruction: i32, paramater: usize) -> bool {
 }
 
 impl Program {
-    fn inject_input(&mut self, noun: i32, verb: i32) {
-        self.memory[1] = noun;
-        self.memory[2] = verb;
-    }
     fn new(memory: Vec<i32>) -> Program {
         Program {
             id: 0,
@@ -404,13 +339,10 @@ impl Program {
     fn set(&mut self, index: usize, value: i32) {
         self.memory[index] = value;
     }
-    fn r#continue(&mut self) {
+    fn execute(&mut self) {
         if self.status.blocked() {
             self.status = RunStatus::Running;
         }
-        self.execute();
-    }
-    fn execute(&mut self) {
         while self.status.running() {
             self.step(100);
         }
