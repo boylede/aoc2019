@@ -28,14 +28,16 @@ Time to complete: 01:33:38
 
 Day three really pumped up the pressure for me. I couldn't visualize the problem space well enough and I ended up writing a lot of boilerplate while I figured out the shape of my solution. Once I had the first part solved, I went back and trimmed a lot of code I deemed too unwieldy for such a simple result. I thought I was doing this in order to reshape the overall solution to be more simular to what I imagined I'd do for part2, giving me the ability to copy part1 and add a line or two.
 
-It turns out that HashMap does not have all the same functions available as HashSet (I'm sure there is a very good reason why, but it was a surprise to me). To get around this, I ended up with a brute-force process that takes a very long time to complete. This is totally unneeded since I can check for matches as I am generating the points for lineB (no need to even save lineB points).
+It turns out that I ended up making part2 more difficult for myself. I eventually ended up with a solution that has to iterate over all the values at the end in order to check for matches, instead of just only keeping values that match at the time they are generated. This took about 40 seconds to run, when compiled in release mode. 
 
-The ironic part was, the machinery I had culled from part1 will be perfect for this, so I can go back and re-use that logic when I re-write this.
+Once I had the solution I knew I'd have to go back and make it fast again. The first attempt to re-write it had a bug where I was adding the coordinates wrong and I didn't have time to come back to it again until after day 8. I ended up re-writing it to be in a more functional style.
 
-||||
-| --|-- |--|
-|Part One | 36.18 ms| |
-|Part Two | 39.21 s| ripe for some easy optimizations |
+The current solution finishes part 2 in 15ms. 
+
+|||
+| --|-- |
+|Part One | 26.58 ms|
+|Part Two | 14.51 ms| 
 
 ## Day Four: Password Rules
 Time to complete: 00:28:44 - My PR!
