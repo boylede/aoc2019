@@ -322,7 +322,7 @@ impl Program {
             self.step(100);
         }
     }
-    fn extract_output(&self) -> i32 {
+    fn _extract_output(&self) -> i32 {
         self.memory[0]
     }
 }

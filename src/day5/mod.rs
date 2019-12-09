@@ -64,7 +64,7 @@ fn is_immediate(instruction: i32, paramater: usize) -> bool {
 }
 
 impl Program {
-    fn inject_input(&mut self, noun: i32, verb: i32) {
+    fn _inject_input(&mut self, noun: i32, verb: i32) {
         self.memory[1] = noun;
         self.memory[2] = verb;
     }
@@ -212,7 +212,7 @@ impl Program {
             self.step(100);
         }
     }
-    fn extract_output(&self) -> i32 {
+    fn _extract_output(&self) -> i32 {
         self.memory[0]
     }
 }
