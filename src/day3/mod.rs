@@ -163,61 +163,59 @@ fn part1(lines: &Vec<String>) {
 }
 
 fn part2(lines: &Vec<String>) {
-    let mut a_points: HashMap<Coordinate, i32> = HashMap::new();
     let a: Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0]
         .split(',')
         .map(|l| l.parse::<RelativeLine>())
         .collect();
     let a = a.unwrap();
 
-    let mut x: i32 = 0;
-    let mut y: i32 = 0;
-    let mut dist = 1;
-    a.iter().for_each(|r| {
-        let points = r.extract_points(x, y);
-        points.iter().for_each(|p| {
-            a_points.insert(*p, dist);
-            dist = dist + 1;
-        });
-        let (u, v) = r.end(x, y);
-        x = u;
-        y = v;
-    });
-    x = 0;
-    y = 0;
-    dist = 1;
-    let mut b_points: HashMap<Coordinate, i32> = HashMap::new();
+    let a_points: HashMap<Coordinate, i32> = a
+        .iter()
+        .fold(vec![Coordinate{x:0,y:0}], |mut points, r| {
+            let Coordinate{x:xx,y:yy} = points.last().unwrap();
+            let new_points = r.extract_points(*xx, *yy);
+            points.extend(new_points);
+            points
+        })
+        .iter()
+        .enumerate()
+        .map(|(dist, point)| {
+            (*point, dist as i32)
+        }).collect();
+
     let b: Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[1]
         .split(',')
         .map(|l| l.parse::<RelativeLine>())
         .collect();
     let b = b.unwrap();
-    b.iter().for_each(|r| {
-        let points = r.extract_points(x, y);
-        points.iter().for_each(|p| {
-            b_points.insert(*p, dist);
-            dist = dist + 1;
-        });
-        let (u, v) = r.end(x, y);
-        x = u;
-        y = v;
-    });
+    let mut common_points: HashMap<Coordinate, i32> = b
+        .iter()
+        .fold(vec![Coordinate{x:0,y:0}], |mut points, r| {
+            let Coordinate{x:xx,y:yy} = points.last().unwrap();
+            let new_points = r.extract_points(*xx, *yy);
+            points.extend(new_points);
+            points
+        })
+        .iter()
+        .enumerate()
+        .filter_map(|(dist, point)| {
+            if a_points.contains_key(point) {
+                let d = a_points.get(point).unwrap();
+                Some((dist as i32 + d, point))
+            } else {
+                None
+            }
+        })
+        .map(|(dist, point)| {
+            (*point, dist as i32)
+        }).collect();
 
-    let common_points: Vec<Coordinate> = a_points
-        .keys()
-        .filter(|a_k| b_points.keys().any(|b_k| *b_k == **a_k))
-        .map(|e| e.clone())
-        .collect();
-    let best = common_points.iter().fold(10000, |best, current| {
-        let a_distance = a_points.get(current).unwrap();
-        let b_distance = b_points.get(current).unwrap();
-        let total = a_distance + b_distance;
-        if total < best {
-            total
+    let best = common_points.drain().fold(10000, |best, (k, distance)| {
+        if distance < best && distance != 0 {
+            distance
         } else {
             best
         }
     });
-
     println!("Part 2: {}", best);
 }
