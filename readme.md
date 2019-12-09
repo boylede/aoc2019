@@ -36,7 +36,7 @@ The current solution finishes part 2 in 15ms.
 
 |||
 | --|-- |
-|Part One | 26.58 ms|
+|Part One | 17.45 ms|
 |Part Two | 14.51 ms| 
 
 ## Day Four: Password Rules

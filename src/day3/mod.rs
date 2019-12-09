@@ -71,7 +71,7 @@ impl RelativeLine {
         }
         pts
     }
-    fn end(&self, mut x: i32, mut y: i32) -> (i32, i32) {
+    fn _end(&self, mut x: i32, mut y: i32) -> (i32, i32) {
         match self.direction {
             Direction::Up => y = y + self.distance,
             Direction::Right => x = x + self.distance,
@@ -110,49 +110,51 @@ impl FromStr for RelativeLine {
 }
 
 fn part1(lines: &Vec<String>) {
-    let mut a_points: HashSet<Coordinate> = HashSet::new();
     let a: Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[0]
         .split(',')
         .map(|l| l.parse::<RelativeLine>())
         .collect();
     let a = a.unwrap();
 
-    let mut x: i32 = 0;
-    let mut y: i32 = 0;
-    a.iter().for_each(|r| {
-        let points = r.extract_points(x, y);
-        points.iter().for_each(|p| {
-            a_points.insert(*p);
-        });
-        let (u, v) = r.end(x, y);
-        x = u;
-        y = v;
-    });
+    let a_points: HashSet<Coordinate> = a
+        .iter()
+        .fold(vec![Coordinate{x:0,y:0}], |mut points, r| {
+            let Coordinate{x:xx,y:yy} = points.last().unwrap();
+            let new_points = r.extract_points(*xx, *yy);
+            points.extend(new_points);
+            points
+        })
+        .iter()
+        .map(|point| *point)
+        .collect();
 
-    x = 0;
-    y = 0;
-    let mut b_points: HashSet<Coordinate> = HashSet::new();
     let b: Result<Vec<RelativeLine>, std::num::ParseIntError> = lines[1]
         .split(',')
         .map(|l| l.parse::<RelativeLine>())
         .collect();
     let b = b.unwrap();
-    b.iter().for_each(|r| {
-        let points = r.extract_points(x, y);
-        points.iter().for_each(|p| {
-            b_points.insert(*p);
-        });
-        let (u, v) = r.end(x, y);
-        x = u;
-        y = v;
-    });
+    let b_points: HashSet<Coordinate> = b
+        .iter()
+        .fold(vec![Coordinate{x:0,y:0}], |mut points, r| {
+            let Coordinate{x:xx,y:yy} = points.last().unwrap();
+            let new_points = r.extract_points(*xx, *yy);
+            points.extend(new_points);
+            points
+        })
+        .iter()
+        .map(|point| *point)
+        .collect();
+
     let best: i32 = a_points
         .intersection(&b_points)
+        // .inspect(|point| {
+        //     println!("{:?}", point);
+        // })
         .map(|Coordinate { x, y }| x.abs() + y.abs())
         .fold(
             10000,
             |highest, current| {
-                if current < highest {
+                if current < highest && current != 0 {
                     current
                 } else {
                     highest
@@ -210,7 +212,7 @@ fn part2(lines: &Vec<String>) {
             (*point, dist as i32)
         }).collect();
 
-    let best = common_points.drain().fold(10000, |best, (k, distance)| {
+    let best = common_points.drain().fold(10000, |best, (_, distance)| {
         if distance < best && distance != 0 {
             distance
         } else {
