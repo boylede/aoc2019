@@ -4,29 +4,13 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::str::FromStr;
 
-use aoc2019::Day;
-
-const DAY: i32 = 9;
-
-fn part1(lines: &Vec<String>) {
-    let mut program: Program = lines[0].parse().unwrap();
-    program.input(1);
-    program.execute();
-    let value = program.output.unwrap();
-    println!("Part 1: {:?}", value);
-}
-
-fn part2(lines: &Vec<String>) {
-    let mut program: Program = lines[0].parse().unwrap();
-    program.input(2);
-    program.execute();
-    let value = program.output.unwrap();
-    println!("Part 2: {:?}", value);
+fn running(p: &Program) -> bool {
+    p.status.unfinished()
 }
 
 #[derive(Clone)]
 struct Program {
-    id: usize,
+    pub id: usize,
     counter: usize,
     base: i64,
     cycles: usize,
@@ -50,6 +34,9 @@ impl RunStatus {
     }
     fn blocked(&self) -> bool {
         *self == RunStatus::Blocked
+    }
+    fn unfinished(&self) -> bool {
+        self.running() || self.blocked()
     }
 }
 
@@ -82,7 +69,7 @@ impl Program {
             panic!("tried to add input while buffer was moved");
         }
     }
-    fn _output(&mut self) -> Option<i64> {
+    fn output(&mut self) -> Option<i64> {
         if let Some(output) = &mut self.output {
             output.pop_front()
         } else {
@@ -92,9 +79,6 @@ impl Program {
 
     fn step(&mut self, steps: usize) {
         let mut ticks = 0;
-        // let input = self.input.as_ref().expect("tried to use program while input buffer was moved");
-        // let output = self.output.as_ref().expect("tried to use program while output buffer was moved");
-
         while steps > ticks {
             let instruction = self.memory[self.counter];
             // print!("{}:\t{}\t", self.counter, instruction);
@@ -225,18 +209,8 @@ impl Program {
             1 => self.get_offset(offset), 
             2 => {
                 let address = (self.memory[self.counter + offset] as i64 + self.base)as usize;
-                // println!("## getting value {} from {}; adding base {} gets {} ##", self.memory[self.counter + offset], self.counter + offset, self.base, address);
-                
                 self.get(address)
             },
-            _ => panic!("unknown parameter mode"),
-        }
-    }
-    fn set_parameter(&mut self, offset: usize, value: i64) {
-        match get_mode(self.memory[self.counter], offset) {
-            0 => self.set_indirect(offset, value),
-            1 => panic!("tried to set an immediate value"), 
-            2 => self.set_indirect_base(offset, value),
             _ => panic!("unknown parameter mode"),
         }
     }
@@ -267,6 +241,15 @@ impl Program {
             self.memory.extend([0].iter().cycle().take(need));
         }
     }
+    fn set_parameter(&mut self, offset: usize, value: i64) {
+        match get_mode(self.memory[self.counter], offset) {
+            0 => self.set_indirect(offset, value),
+            1 => panic!("tried to set an immediate value"), 
+            2 => self.set_indirect_base(offset, value),
+            _ => panic!("unknown parameter mode"),
+        }
+    }
+    
     fn set_indirect(&mut self, offset: usize, value: i64) {
         self.prep_get(self.counter + offset);
         let index = self.memory[self.counter + offset];
