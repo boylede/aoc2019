@@ -42,33 +42,45 @@ impl VirtualMachine for Program {
     }
 }
 
-
-
-pub struct Network<VM> 
+pub struct LoopNetwork<VM> 
 where VM: VirtualMachine
 {
+    first: u32,
+    last: u32,
     vms: HashMap<u32, VM>,
     connections: HashMap<u32, u32>,
-
+    inputs: HashMap<u32, i64>,
+    // outputs: HashMap<u32, i64>,
 }
 
-impl<VM> VirtualMachine for Network<VM> 
+impl<VM> VirtualMachine for LoopNetwork<VM> 
 where VM: VirtualMachine
 {
     fn put_input(&mut self, value: i64) {
-        unimplemented!()
+        // self.vms.get_mut(&self.first).unwrap().put_input(value)
+        self.inputs.insert(self.first, value);
     }
     fn take_output(&mut self) -> Option<i64> {
-        unimplemented!()
+        self.vms.get_mut(&self.last).unwrap().take_output()
     }
     fn step(&mut self, steps: usize) {
-        unimplemented!()
+        for (id, vm) in self.vms.iter_mut() {
+            if let Some(input) = self.inputs.remove(id) {
+                vm.put_input(input);
+            }
+            vm.step(steps);
+            if let Some(pair) = self.connections.get(id) {
+                if let Some(output) = vm.take_output() {
+                    self.inputs.insert(*pair, output);
+                }
+            }
+        }
     }
     fn can_run(&self) -> bool {
-        unimplemented!()
+        self.vms.values().any(|vm| vm.can_run())
     }
     fn unblock(&mut self) -> bool {
-        unimplemented!()
+        self.vms.values_mut().map(|vm| vm.unblock()).any(|b|b)
     }
 }
 
