@@ -2,7 +2,6 @@ use std::collections::VecDeque;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::str::FromStr;
 
 use aoc2019::Day;
 use crate::intcode::Program;
