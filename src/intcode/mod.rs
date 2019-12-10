@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::marker::PhantomData;
 
 
 pub trait VirtualMachine {
@@ -12,7 +13,7 @@ pub trait VirtualMachine {
     fn execute(&mut self) {
         self.unblock();
         while self.can_run() {
-            let count = self.step(100);
+            self.step(100);
         }
     }
 }
@@ -71,6 +72,9 @@ where VM: VirtualMachine
         }
     }
     pub fn insert(&mut self, id: u32, vm: VM) -> Option<VM> {
+        if self.closed {
+            panic!("can't insert new VMs after loop has been closed");
+        }
         if self.vms.len() == 0 {
             self.first = id;
         }
@@ -84,9 +88,6 @@ where VM: VirtualMachine
         self.connections.insert(self.last, self.first);
         self.closed = true;
     }
-    // fn connect(&mut self, a: u32, b: u32) -> Option<u32> {
-    //     self.connections.insert(a, b)
-    // }
 }
 
 impl<VM> VirtualMachine for LoopNetwork<VM> 
@@ -127,6 +128,63 @@ where VM: VirtualMachine
         // } else {
         //     true
         // }
+        self.vms.values().any(|vm| vm.can_run())
+    }
+    fn unblock(&mut self) -> bool {
+        self.vms.values_mut().map(|vm| vm.unblock()).any(|b|b)
+    }
+}
+
+pub trait Collector {
+    fn collect(&mut HashMap<u32, i64>) -> Option<i64>;
+}
+
+pub struct BroadcastNetwork<VM, C> 
+where VM: VirtualMachine,
+C: Collector
+{
+    vms: HashMap<u32, VM>,
+    outputs: HashMap<u32, i64>,
+    _collector: PhantomData<C>,
+}
+
+impl<VM, C> BroadcastNetwork<VM, C> 
+where VM: VirtualMachine,
+C: Collector,
+{
+    pub fn new(c: C) -> Self {
+        BroadcastNetwork {
+            vms: HashMap::new(),
+            outputs: HashMap::new(),
+            _collector: PhantomData,
+        }
+    }
+    pub fn insert(&mut self, id: u32, vm: VM) -> Option<VM> {
+        self.vms.insert(id, vm)
+    }
+}
+
+impl<VM, C> VirtualMachine for BroadcastNetwork<VM, C> 
+where VM: VirtualMachine,
+C: Collector,
+{
+    fn put_input(&mut self, value: i64) {
+        self.vms.values_mut().for_each(|vm| vm.put_input(value));
+    }
+    fn take_output(&mut self) -> Option<i64> {
+        C::collect(&mut self.outputs)
+        // self.outputs.values().next().copied()
+    }
+    fn step(&mut self, steps: usize) {
+        for (id, vm) in self.vms.iter_mut() {
+            vm.step(steps);
+            
+            if let Some(output) = vm.take_output() {
+                self.outputs.insert(*id, output);
+            }
+        }
+    }
+    fn can_run(&self) -> bool {
         self.vms.values().any(|vm| vm.can_run())
     }
     fn unblock(&mut self) -> bool {
