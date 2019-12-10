@@ -1,9 +1,10 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::str::FromStr;
+
 
 use aoc2019::Day;
+use crate::intcode::Program;
 
 const DAY: i32 = 2;
 
@@ -45,9 +46,10 @@ fn post_load(lines: Vec<String>) {
 
 fn part1(lines: &Vec<String>) {
     let mut program: Program = lines[0].parse().unwrap();
-    program.load_input(12, 2);
+    program.set(1, 12);
+    program.set(2, 2);
     program.execute();
-    let value = program.output();
+    let value = program.get(0);
     println!("Part 1: {}", value);
 }
 
@@ -56,9 +58,10 @@ fn part2(lines: &Vec<String>) {
     for noun in 0..=99 {
         for verb in 0..=99 {
             let mut attempt = program.clone();
-            attempt.load_input(noun, verb);
+            attempt.set(1, noun);
+            attempt.set(2, verb);
             attempt.execute();
-            let value = attempt.output();
+            let value = attempt.get(0);
             if value == 19690720 {
                 println!("Part 2: {}", noun * 100 + verb);
                 return;
@@ -66,110 +69,13 @@ fn part2(lines: &Vec<String>) {
         }
     }
 }
-#[derive(Clone)]
-struct Program {
-    counter: usize,
-    cycles: usize,
-    status: RunStatus,
-    memory: Vec<i32>,
-}
-
-#[derive(Clone, PartialEq)]
-enum RunStatus {
-    Running,
-    Finished,
-    Killed,
-}
-
-impl RunStatus {
-    fn running(&self) -> bool {
-        *self == RunStatus::Running
-    }
-}
-
-impl Program {
-    fn load_input(&mut self, noun: i32, verb: i32) {
-        self.memory[1] = noun;
-        self.memory[2] = verb;
-    }
-    fn new(memory: Vec<i32>) -> Program {
-        Program {
-            counter: 0,
-            cycles: 0,
-            status: RunStatus::Running,
-            memory,
-        }
-    }
-    fn step(&mut self, steps: usize) {
-        let mut ticks = 0;
-        while steps > ticks {
-            match self.memory[self.counter] {
-                1 => {
-                    let a = self.get_indirect(1);
-                    let b = self.get_indirect(2);
-                    self.set_indirect(3, a + b);
-                    self.counter = self.counter + 4;
-                }
-                2 => {
-                    let a = self.get_indirect(1);
-                    let b = self.get_indirect(2);
-                    self.set_indirect(3, a * b);
-                    self.counter = self.counter + 4;
-                }
-                99 => {
-                    self.status = RunStatus::Finished;
-                    break;
-                }
-                _ => {
-                    self.status = RunStatus::Killed;
-                    break;
-                }
-            }
-            ticks = ticks + 1;
-        }
-        self.cycles = self.cycles + ticks;
-    }
-    fn get_offset(&self, offset: usize) -> i32 {
-        self.memory[self.counter + offset]
-    }
-    fn get_indirect(&self, offset: usize) -> i32 {
-        self.memory[self.get_offset(offset) as usize]
-    }
-    fn set_indirect(&mut self, offset: usize, value: i32) {
-        let index = self.memory[self.counter + offset];
-        self.set(index as usize, value);
-    }
-    fn set(&mut self, index: usize, value: i32) {
-        self.memory[index] = value;
-    }
-    fn execute(&mut self) {
-        while self.status.running() {
-            self.step(100);
-        }
-    }
-    fn output(&self) -> i32 {
-        self.memory[0]
-    }
-}
-
-impl FromStr for Program {
-    type Err = std::num::ParseIntError;
-    fn from_str(input: &str) -> Result<Program, Self::Err> {
-        Ok(Program::new(
-            input
-                .split_terminator(',')
-                .map(|num| num.parse::<i32>())
-                .collect::<Result<Vec<i32>, Self::Err>>()?,
-        ))
-    }
-}
 
 #[test]
 pub fn tests() {
-    pub fn run(test: &str) -> Vec<i32> {
+    pub fn run(test: &str) -> Vec<i64> {
         let mut program: Program = test.parse().unwrap();
         program.execute();
-        program.memory
+        program.dump_ram()
     }
 
     assert_eq!(run("1,0,0,0,99"), vec![2, 0, 0, 0, 99]);
