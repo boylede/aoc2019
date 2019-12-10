@@ -1,9 +1,77 @@
 use std::collections::VecDeque;
+use std::collections::HashMap;
 use std::str::FromStr;
 
-fn running(p: &Program) -> bool {
-    p.status.unfinished()
+
+pub trait VirtualMachine {
+    fn put_input(&mut self, value: i64);
+    fn take_output(&mut self) -> Option<i64>;
+    fn step(&mut self, steps: usize);
+    fn can_run(&self) -> bool;
+    fn unblock(&mut self) -> bool;
+    fn execute(&mut self) {
+        self.unblock();
+        while self.can_run() {
+            self.step(100);
+        }
+    }
 }
+impl VirtualMachine for Program {
+    fn put_input(&mut self, value: i64) {
+        self.input(value)
+    }
+    #[inline]
+    fn take_output(&mut self) -> Option<i64> {
+        self.output()
+    }
+    fn step(&mut self, steps: usize) {
+        self.step(steps)
+    }
+    #[inline]
+    fn can_run(&self) -> bool {
+        self.status.unfinished()
+    }
+    #[inline]
+    fn unblock(&mut self) -> bool {
+        if self.status.blocked() {
+            self.status = RunStatus::Running;
+            true
+        } else {
+            false
+        }
+    }
+}
+
+
+
+pub struct Network<VM> 
+where VM: VirtualMachine
+{
+    vms: HashMap<u32, VM>,
+    connections: HashMap<u32, u32>,
+
+}
+
+impl<VM> VirtualMachine for Network<VM> 
+where VM: VirtualMachine
+{
+    fn put_input(&mut self, value: i64) {
+        unimplemented!()
+    }
+    fn take_output(&mut self) -> Option<i64> {
+        unimplemented!()
+    }
+    fn step(&mut self, steps: usize) {
+        unimplemented!()
+    }
+    fn can_run(&self) -> bool {
+        unimplemented!()
+    }
+    fn unblock(&mut self) -> bool {
+        unimplemented!()
+    }
+}
+
 
 #[derive(Clone)]
 pub struct Program {
@@ -17,6 +85,7 @@ pub struct Program {
     pub output: Option<VecDeque<i64>>,
 }
 
+
 #[derive(Clone, PartialEq, Debug)]
 pub enum RunStatus {
     Running,
@@ -26,12 +95,15 @@ pub enum RunStatus {
 }
 
 impl RunStatus {
+    #[inline]
     pub fn running(&self) -> bool {
         *self == RunStatus::Running
     }
+    #[inline]
     pub fn blocked(&self) -> bool {
         *self == RunStatus::Blocked
     }
+    #[inline]
     pub fn unfinished(&self) -> bool {
         self.running() || self.blocked()
     }
