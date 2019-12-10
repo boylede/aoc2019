@@ -5,6 +5,8 @@ use std::io::BufReader;
 
 use aoc2019::Day;
 use crate::intcode::Program;
+use crate::intcode::LoopNetwork;
+use crate::intcode::VirtualMachine;
 
 const DAY: i32 = 7;
 
@@ -36,28 +38,20 @@ fn part1(lines: &Vec<String>) {
     let mut best = 0;
     for phase in 0..5 * 4 * 3 * 2 {
         let mut setting = phases[phase].clone();
-        let mut amplifiers = vec![];
+        let mut amplifiers = LoopNetwork::new();
         for i in 0..=4 {
             let mut amp = Program::new(amp_driver.clone());
             amp.id = i;
-            amplifiers.push(amp);
+            amp.put_input(setting.pop().unwrap());
+            amplifiers.insert(i as u32, amp);
         }
-        let mut last_output: i64 = 0;
-        for amp in &mut amplifiers {
-            amp.input(setting.pop().unwrap());
-            amp.input(last_output);
-            amp.execute();
-            if let Some(value) = amp.output() {
-                last_output = value;
-            } else {
-                panic!("intcode program didn't provide expected output");
-            }
-        }
+        amplifiers.put_input(0);
+        amplifiers.execute();
+        let last_output = amplifiers.take_output().unwrap();
         if last_output > best {
             best = last_output;
         }
     }
-
     println!("Part 1: {}", best);
 }
 
@@ -67,36 +61,38 @@ fn part2(lines: &Vec<String>) {
     let amp_driver = p.dump_ram();
     let mut best = 0;
     for phase in 0..5 * 4 * 3 * 2 {
-        let mut amplifiers = vec![];
+        let mut amplifiers = LoopNetwork::new();
+        let mut setting = phases[phase].clone();
         for i in 0..=4 {
             let mut amp = Program::new(amp_driver.clone());
             amp.id = i;
-            amplifiers.push(amp);
+            amp.put_input(setting.pop().unwrap());
+            amplifiers.insert(i as u32, amp);
         }
-        let mut setting = phases[phase].clone();
-        for amp in &mut amplifiers {
-            amp.input(setting.pop().unwrap());
-            amp.execute();
-        }
-        let mut queue: VecDeque<i64> = VecDeque::new();
-        queue.push_back(0);
-        let mut last_queue = Some(queue);
+        
+        amplifiers.put_input(0);
+        amplifiers.connect_ends();
+        amplifiers.execute();
+        // let mut queue: VecDeque<i64> = VecDeque::new();
+        // queue.push_back(0);
+        // let mut last_queue = Some(queue);
 
-        while amplifiers.iter().any(|p| p.status.unfinished()) {
-            for current in &mut amplifiers {
-                current.input = last_queue.take();
-                current.output = Some(VecDeque::new());
-                current.execute();
-                last_queue = current.output.take();
-            }
-        }
-        if let Some(mut q) = last_queue {
-            if let Some(out) = q.pop_front() {
-                if out > best {
-                    best = out;
+        // while amplifiers.iter().any(|p| p.status.unfinished()) {
+        //     for current in &mut amplifiers {
+        //         current.input = last_queue.take();
+        //         current.output = Some(VecDeque::new());
+        //         current.execute();
+        //         last_queue = current.output.take();
+        //     }
+        // }
+        let last_output = amplifiers.take_output().unwrap();
+        // if let Some(mut q) = last_queue {
+            // if let Some(out) = q.pop_front() {
+                if last_output > best {
+                    best = last_output;
                 }
-            }
-        }
+            // }
+        // }
     }
     println!("Part 2: {:?}", best);
 }

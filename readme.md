@@ -81,6 +81,7 @@ Returning to my love of VMs, I was excited to see we would be hooking them toget
 In theory, this could work just by popping the last value but I wasn't sure that the code running on the machines would output exactly one number for every one number of input. I decided to wrap my queues in an Option<> so that I can make use of the .take() method to switch the queue from one machine to the next. This added a lot of checking all throughout the code which in hindsight probably wasn't worth the time. I also switched my queues to use a VecDeque instead of a plain Vec, because it provides both front/back push and pops. 
 
 In a future iteration of this VM code I'd like to add better (automatic?) networking, so that you have a Network object which handles the queue passing.
+Edit: I went back after day 9 and generalized the day7 code as a new Network struct. While there, I made Program and Network implement a new VirtualMachine trait, so that Networks can be composed of other Networks or Programs indiscriminately. I only implemented the loop style network that day 7 described, but I imagine there could be some kind of broadcast network topology easily added.  This new level of indirection slows down the VM challenges by about 1ms each.
 
 I started this challenge the following day, and it took much longer than I expected. The VM part was relatively straightforward, but I had a bug in the code which generated my phase inputs and this affected my part2 results. My part1 results didn't need the missing values so I didn't notice for a while that I was missing 50% of the possible input space. I struggled for a while to make it work and eventually fell back on a solution that works but isn't as pretty as I was hoping for.
 
@@ -101,3 +102,12 @@ In this case, I did the re-write before completing the challenge and it managed 
 |Part One | 0.15 ms|
 |Part Two | 0.92 ms|
 
+## Day Nine: VM addressing mode 2
+Time to complete: 02:45:25
+
+This one took me ages to complete. Adding a new addressing mode was something I expected would come up so I was ready for that with how I structured the program, but for some reason I thought the new base register was supposed to be added to the program counter to produce the final address to read from, rather than replacing the program counter in that formula.
+
+|||
+| --|-- |
+|Part One | 0.26 ms|
+|Part Two | 13.51 ms|

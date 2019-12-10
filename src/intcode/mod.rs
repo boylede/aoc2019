@@ -12,7 +12,7 @@ pub trait VirtualMachine {
     fn execute(&mut self) {
         self.unblock();
         while self.can_run() {
-            self.step(100);
+            let count = self.step(100);
         }
     }
 }
@@ -50,7 +50,43 @@ where VM: VirtualMachine
     vms: HashMap<u32, VM>,
     connections: HashMap<u32, u32>,
     inputs: HashMap<u32, i64>,
+    closed: bool,
+    last_output: Option<i64>,
     // outputs: HashMap<u32, i64>,
+}
+
+
+impl<VM> LoopNetwork<VM> 
+where VM: VirtualMachine
+{
+    pub fn new() -> Self {
+        LoopNetwork {
+            first: 0,
+            last: 0,
+            vms: HashMap::new(),
+            connections: HashMap::new(),
+            inputs: HashMap::new(),
+            last_output: None,
+            closed: false,
+        }
+    }
+    pub fn insert(&mut self, id: u32, vm: VM) -> Option<VM> {
+        if self.vms.len() == 0 {
+            self.first = id;
+        }
+        let old = self.vms.insert(id, vm);
+        // self.connect(self.last, id);
+        self.connections.insert(self.last, id);
+        self.last = id;
+        old
+    }
+    pub fn connect_ends(&mut self) {
+        self.connections.insert(self.last, self.first);
+        self.closed = true;
+    }
+    // fn connect(&mut self, a: u32, b: u32) -> Option<u32> {
+    //     self.connections.insert(a, b)
+    // }
 }
 
 impl<VM> VirtualMachine for LoopNetwork<VM> 
@@ -61,7 +97,11 @@ where VM: VirtualMachine
         self.inputs.insert(self.first, value);
     }
     fn take_output(&mut self) -> Option<i64> {
-        self.vms.get_mut(&self.last).unwrap().take_output()
+        if self.closed {
+            self.last_output
+        } else {
+            self.vms.get_mut(&self.last).unwrap().take_output()
+        }
     }
     fn step(&mut self, steps: usize) {
         for (id, vm) in self.vms.iter_mut() {
@@ -71,19 +111,28 @@ where VM: VirtualMachine
             vm.step(steps);
             if let Some(pair) = self.connections.get(id) {
                 if let Some(output) = vm.take_output() {
+                    if *id == self.last {
+                        self.last_output = Some(output);
+                    }
                     self.inputs.insert(*pair, output);
                 }
             }
         }
     }
     fn can_run(&self) -> bool {
+        // if self.vms.values().all(|vm| ! vm.can_run()) {
+        //     println!("All VMs blocked");
+        //     panic!("Stopped");
+        //     false
+        // } else {
+        //     true
+        // }
         self.vms.values().any(|vm| vm.can_run())
     }
     fn unblock(&mut self) -> bool {
         self.vms.values_mut().map(|vm| vm.unblock()).any(|b|b)
     }
 }
-
 
 #[derive(Clone)]
 pub struct Program {
@@ -159,6 +208,7 @@ impl Program {
     }
 
     pub fn step(&mut self, steps: usize) {
+        // print!("stepping vm {}", self.id);
         let mut ticks = 0;
         while steps > ticks {
             let instruction = self.memory[self.counter];
@@ -283,6 +333,7 @@ impl Program {
             ticks = ticks + 1;
         }
         self.cycles = self.cycles + ticks;
+        // println!(", {} times ended in {:?}", self.cycles, self.status);
     }
     fn get_parameter(&mut self, offset: usize) -> i64 {
         match get_mode(self.memory[self.counter], offset) {
