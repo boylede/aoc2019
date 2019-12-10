@@ -26,13 +26,13 @@ pub enum RunStatus {
 }
 
 impl RunStatus {
-    fn running(&self) -> bool {
+    pub fn running(&self) -> bool {
         *self == RunStatus::Running
     }
-    fn blocked(&self) -> bool {
+    pub fn blocked(&self) -> bool {
         *self == RunStatus::Blocked
     }
-    fn unfinished(&self) -> bool {
+    pub fn unfinished(&self) -> bool {
         self.running() || self.blocked()
     }
 }

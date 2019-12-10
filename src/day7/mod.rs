@@ -5,10 +5,11 @@ use std::io::BufReader;
 use std::str::FromStr;
 
 use aoc2019::Day;
+use crate::intcode::Program;
 
 const DAY: i32 = 7;
 
-fn all_possibilities(mut values: Vec<i32>) -> Vec<Vec<i32>> {
+fn all_possibilities(mut values: Vec<i64>) -> Vec<Vec<i64>> {
     let mut all = vec![];
     if values.len() < 2 {
         all.push(vec![values[0]]);
@@ -32,7 +33,7 @@ fn all_possibilities(mut values: Vec<i32>) -> Vec<Vec<i32>> {
 fn part1(lines: &Vec<String>) {
     let phases = all_possibilities(vec![0, 1, 2, 3, 4]);
     let p: Program = lines[0].parse().unwrap();
-    let amp_driver = p.memory;
+    let amp_driver = p.dump_ram();
     let mut best = 0;
     for phase in 0..5 * 4 * 3 * 2 {
         let mut setting = phases[phase].clone();
@@ -42,7 +43,7 @@ fn part1(lines: &Vec<String>) {
             amp.id = i;
             amplifiers.push(amp);
         }
-        let mut last_output: i32 = 0;
+        let mut last_output: i64 = 0;
         for amp in &mut amplifiers {
             amp.input(setting.pop().unwrap());
             amp.input(last_output);
@@ -63,9 +64,8 @@ fn part1(lines: &Vec<String>) {
 
 fn part2(lines: &Vec<String>) {
     let phases = all_possibilities(vec![5, 6, 7, 8, 9]);
-    let Program {
-        memory: amp_driver, ..
-    } = lines[0].parse().unwrap();
+    let p : Program = lines[0].parse().unwrap();
+    let amp_driver = p.dump_ram();
     let mut best = 0;
     for phase in 0..5 * 4 * 3 * 2 {
         let mut amplifiers = vec![];
@@ -79,11 +79,11 @@ fn part2(lines: &Vec<String>) {
             amp.input(setting.pop().unwrap());
             amp.execute();
         }
-        let mut queue: VecDeque<i32> = VecDeque::new();
+        let mut queue: VecDeque<i64> = VecDeque::new();
         queue.push_back(0);
         let mut last_queue = Some(queue);
 
-        while amplifiers.iter().any(running) {
+        while amplifiers.iter().any(|p| p.status.unfinished()) {
             for current in &mut amplifiers {
                 current.input = last_queue.take();
                 current.output = Some(VecDeque::new());
@@ -100,243 +100,6 @@ fn part2(lines: &Vec<String>) {
         }
     }
     println!("Part 2: {:?}", best);
-}
-
-fn running(p: &Program) -> bool {
-    p.status.unfinished()
-}
-
-#[derive(Clone)]
-struct Program {
-    id: usize,
-    counter: usize,
-    cycles: usize,
-    status: RunStatus,
-    memory: Vec<i32>,
-    input: Option<VecDeque<i32>>,
-    output: Option<VecDeque<i32>>,
-}
-
-#[derive(Clone, PartialEq, Debug)]
-enum RunStatus {
-    Running,
-    Finished,
-    Killed,
-    Blocked,
-}
-
-impl RunStatus {
-    fn running(&self) -> bool {
-        *self == RunStatus::Running
-    }
-    fn blocked(&self) -> bool {
-        *self == RunStatus::Blocked
-    }
-    fn unfinished(&self) -> bool {
-        self.running() || self.blocked()
-    }
-}
-
-fn opcode(instruction: i32) -> i32 {
-    instruction % 100
-}
-
-fn is_immediate(instruction: i32, paramater: usize) -> bool {
-    (instruction as u32 / (10u32.pow((paramater as u32) + 1))) % 10 == 1
-}
-
-impl Program {
-    fn new(memory: Vec<i32>) -> Program {
-        Program {
-            id: 0,
-            counter: 0,
-            cycles: 0,
-            status: RunStatus::Running,
-            memory,
-            input: Some(VecDeque::new()),
-            output: Some(VecDeque::new()),
-        }
-    }
-
-    fn input(&mut self, value: i32) {
-        if let Some(input) = &mut self.input {
-            input.push_back(value);
-        } else {
-            panic!("tried to add input while buffer was moved");
-        }
-    }
-    fn output(&mut self) -> Option<i32> {
-        if let Some(output) = &mut self.output {
-            output.pop_front()
-        } else {
-            panic!("tried to add input while buffer was moved");
-        }
-    }
-
-    fn step(&mut self, steps: usize) {
-        let mut ticks = 0;
-        // let input = self.input.as_ref().expect("tried to use program while input buffer was moved");
-        // let output = self.output.as_ref().expect("tried to use program while output buffer was moved");
-
-        while steps > ticks {
-            // print!("{}: ", self.counter);
-            let instruction = self.memory[self.counter];
-            match opcode(instruction) {
-                1 => {
-                    // print!("add ");
-                    let a = self.get_parameter(1);
-                    let b = self.get_parameter(2);
-                    // print!(" -> ");
-                    self.set_indirect(3, a + b);
-                    self.counter = self.counter + 4;
-                }
-                2 => {
-                    // print!("mul ");
-                    let a = self.get_parameter(1);
-                    let b = self.get_parameter(2);
-                    // print!(" -> ");
-                    self.set_indirect(3, a * b);
-                    self.counter = self.counter + 4;
-                }
-                3 => {
-                    // print!("pop ");
-                    let input = &self
-                        .input
-                        .as_mut()
-                        .expect("tried to use input while backing buffer was removed")
-                        .pop_front();
-                    if let Some(value) = input {
-                        self.set_indirect(1, *value);
-                        self.counter = self.counter + 2;
-                    } else {
-                        self.status = RunStatus::Blocked;
-                        break;
-                    }
-                }
-                4 => {
-                    // print!("push ");
-                    let value = self.get_parameter(1);
-
-                    self.output
-                        .as_mut()
-                        .expect("tried to use output while backing buffer was removed")
-                        .push_back(value);
-                    self.counter = self.counter + 2;
-                }
-                5 => {
-                    // print!("if ");
-                    let condition = self.get_parameter(1);
-                    // print!("isn't 0, jump ");
-                    let jump = self.get_parameter(2);
-                    // println!("");
-
-                    if condition != 0 {
-                        self.counter = jump as usize;
-                    } else {
-                        self.counter = self.counter + 3;
-                    }
-                }
-                6 => {
-                    // print!("if ");
-                    let condition = self.get_parameter(1);
-                    // print!("is 0, jump ");
-                    let jump = self.get_parameter(2);
-                    // println!("");
-
-                    if condition == 0 {
-                        self.counter = jump as usize;
-                    } else {
-                        self.counter = self.counter + 3;
-                    }
-                }
-                7 => {
-                    // print!("less than");
-                    let a = self.get_parameter(1);
-                    let b = self.get_parameter(2);
-
-                    if a < b {
-                        self.set_indirect(3, 1);
-                    } else {
-                        self.set_indirect(3, 0);
-                    }
-                    self.counter = self.counter + 4;
-                }
-                8 => {
-                    // print!("greater than");
-                    let a = self.get_parameter(1);
-                    let b = self.get_parameter(2);
-
-                    if a == b {
-                        self.set_indirect(3, 1);
-                    } else {
-                        self.set_indirect(3, 0);
-                    }
-                    self.counter = self.counter + 4;
-                }
-                99 => {
-                    self.status = RunStatus::Finished;
-                    break;
-                }
-                _ => {
-                    println!("killed program: found instruction {}", instruction);
-                    self.status = RunStatus::Killed;
-                    break;
-                }
-            }
-            ticks = ticks + 1;
-        }
-        self.cycles = self.cycles + ticks;
-    }
-    fn get_parameter(&self, offset: usize) -> i32 {
-        if is_immediate(self.memory[self.counter], offset) {
-            let value = self.get_offset(offset);
-            // print!("{}i@{}, ", value, self.counter + offset);
-            value
-        } else {
-            let value = self.get_indirect(offset);
-
-            value
-        }
-    }
-    fn get_offset(&self, offset: usize) -> i32 {
-        self.memory[self.counter + offset]
-    }
-    fn get_indirect(&self, offset: usize) -> i32 {
-        let address = self.get_offset(offset) as usize;
-        // print!("[{}]={}, ", address, self.memory[address]);
-        self.memory[address]
-    }
-    fn set_indirect(&mut self, offset: usize, value: i32) {
-        let index = self.memory[self.counter + offset];
-        // println!("{} @{}, ", value, index);
-        self.set(index as usize, value);
-    }
-    fn set(&mut self, index: usize, value: i32) {
-        self.memory[index] = value;
-    }
-    fn execute(&mut self) {
-        if self.status.blocked() {
-            self.status = RunStatus::Running;
-        }
-        while self.status.running() {
-            self.step(100);
-        }
-    }
-    fn _extract_output(&self) -> i32 {
-        self.memory[0]
-    }
-}
-
-impl FromStr for Program {
-    type Err = std::num::ParseIntError;
-    fn from_str(input: &str) -> Result<Program, Self::Err> {
-        Ok(Program::new(
-            input
-                .split_terminator(',')
-                .map(|num| num.parse::<i32>())
-                .collect::<Result<Vec<i32>, Self::Err>>()?,
-        ))
-    }
 }
 
 pub fn load(days_array: &mut Vec<Day>) {
