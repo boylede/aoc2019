@@ -8,6 +8,8 @@ use aoc2019::Day;
 use std::process;
 // use std::env;
 
+mod intcode;
+
 mod day1;
 mod day2;
 mod day3;

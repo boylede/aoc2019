@@ -1,7 +1,4 @@
 use std::collections::VecDeque;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
 use std::str::FromStr;
 
 fn running(p: &Program) -> bool {
@@ -9,19 +6,19 @@ fn running(p: &Program) -> bool {
 }
 
 #[derive(Clone)]
-struct Program {
+pub struct Program {
     pub id: usize,
     counter: usize,
     base: i64,
-    cycles: usize,
-    status: RunStatus,
+    pub cycles: usize,
+    pub status: RunStatus,
     memory: Vec<i64>,
-    input: Option<VecDeque<i64>>,
-    output: Option<VecDeque<i64>>,
+    pub input: Option<VecDeque<i64>>,
+    pub output: Option<VecDeque<i64>>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
-enum RunStatus {
+pub enum RunStatus {
     Running,
     Finished,
     Killed,
@@ -49,7 +46,7 @@ fn get_mode(instruction: i64, paramater: usize) -> i64 {
 }
 
 impl Program {
-    fn new(memory: Vec<i64>) -> Program {
+    pub fn new(memory: Vec<i64>) -> Program {
         Program {
             id: 0,
             counter: 0,
@@ -62,14 +59,14 @@ impl Program {
         }
     }
 
-    fn input(&mut self, value: i64) {
+    pub fn input(&mut self, value: i64) {
         if let Some(input) = &mut self.input {
             input.push_back(value);
         } else {
             panic!("tried to add input while buffer was moved");
         }
     }
-    fn output(&mut self) -> Option<i64> {
+    pub fn output(&mut self) -> Option<i64> {
         if let Some(output) = &mut self.output {
             output.pop_front()
         } else {
@@ -77,7 +74,7 @@ impl Program {
         }
     }
 
-    fn step(&mut self, steps: usize) {
+    pub fn step(&mut self, steps: usize) {
         let mut ticks = 0;
         while steps > ticks {
             let instruction = self.memory[self.counter];
@@ -214,7 +211,7 @@ impl Program {
             _ => panic!("unknown parameter mode"),
         }
     }
-    fn get(&mut self, offset: usize) -> i64 {
+    pub fn get(&mut self, offset: usize) -> i64 {
         self.prep_get(offset);
         // print!("{{value:{}, address:{}}} ", self.memory[offset], offset);
         self.memory[offset]
@@ -265,12 +262,12 @@ impl Program {
         self.prep_get(address);
         self.set(address, value);
     }
-    fn set(&mut self, index: usize, value: i64) {
+    pub fn set(&mut self, index: usize, value: i64) {
         // println!("set {{value:{}, address:{}}} ", value, index);
         self.prep_get(index);
         self.memory[index] = value;
     }
-    fn execute(&mut self) {
+    pub fn execute(&mut self) {
         if self.status.blocked() {
             self.status = RunStatus::Running;
         }
@@ -278,8 +275,8 @@ impl Program {
             self.step(100);
         }
     }
-    fn _extract_output(&self) -> i64 {
-        self.memory[0]
+    pub fn dump_ram(self) -> Vec<i64> {
+        self.memory
     }
 }
 
@@ -293,56 +290,4 @@ impl FromStr for Program {
                 .collect::<Result<Vec<i64>, Self::Err>>()?,
         ))
     }
-}
-
-pub fn load(days_array: &mut Vec<Day>) {
-    days_array.push(Day::new(DAY, run));
-}
-
-pub fn run(input: File) {
-    println!("loading day {} input.", DAY);
-    let a_time = time::precise_time_ns();
-
-    let mut lines = vec![];
-    {
-        let mut lines_iterator = BufReader::new(&input).lines();
-        while let Some(Ok(line)) = lines_iterator.next() {
-            lines.push(line);
-        }
-    }
-    let b_time = time::precise_time_ns();
-    let total_time = b_time - a_time;
-    if total_time > 100000 {
-        println!("Loading took: {}ms", total_time as f32 / 1000000.0);
-    } else {
-        println!("Loading took: {}ns", total_time);
-    }
-
-    post_load(lines);
-}
-
-fn post_load(lines: Vec<String>) {
-    let a_time = time::precise_time_ns();
-    part1(&lines);
-    let b_time = time::precise_time_ns();
-    part2(&lines);
-    let c_time = time::precise_time_ns();
-    println!("Day {} Part 1 took: {}ns", DAY, b_time - a_time);
-    println!("Day {} Part 2 took: {}ns", DAY, c_time - b_time);
-}
-
-#[test]
-pub fn tests() {
-    pub fn run(program: &str, input: i64) -> Vec<i64> {
-        let mut program: Program = program.parse().unwrap();
-        program.input(input);
-        program.execute();
-        if program.status != RunStatus::Finished {
-            panic!("virtual machine terminated early");
-        }
-        program.output.unwrap().iter().map(|e|*e).collect::<Vec<i64>>()
-    }
-    assert_eq!(run("104,1125899906842624,99", 0), vec![1125899906842624]);
-    assert_eq!(run("109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99", 0), vec![109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99]);
-    assert_eq!(run("1102,34915192,34915192,7,4,7,99,0", 0), vec![1219070632396864]);
 }
