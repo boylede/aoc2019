@@ -111,3 +111,17 @@ This one took me ages to complete. Adding a new addressing mode was something I 
 | --|-- |
 |Part One | 0.26 ms|
 |Part Two | 13.51 ms|
+
+## Day Ten
+
+In progress.. I didn't end up finishing this one on the first day, I'll come back to it later.
+
+## Day Eleven: VM powered robot
+Time to complete: 00:49:59
+
+I dont understand why part2 is so much faster, but I guess the intcode is not as loopy when run with that input.
+
+|||
+| --|-- |
+|Part One | 4.03 ms|
+|Part Two | 0.47 ms|

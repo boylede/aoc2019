@@ -152,7 +152,7 @@ impl<VM, C> BroadcastNetwork<VM, C>
 where VM: VirtualMachine,
 C: Collector,
 {
-    pub fn new(c: C) -> Self {
+    pub fn new() -> Self {
         BroadcastNetwork {
             vms: HashMap::new(),
             outputs: HashMap::new(),
@@ -480,7 +480,7 @@ impl FromStr for Program {
             input
                 .split_terminator(',')
                 .map(|num| num.parse::<i64>())
-                .collect::<Result<Vec<i64>, Self::Err>>()?,
+                .collect::<Result<Vec<i64>, Self::Err>>()?
         ))
     }
 }
