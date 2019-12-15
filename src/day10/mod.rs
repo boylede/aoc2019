@@ -4,61 +4,21 @@ use std::io::BufReader;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use ordered_float::OrderedFloat;
+
 use aoc2019::Day;
 
 const DAY: i32 = 10;
 
-fn check_visible(space: &HashSet<(i32, i32)>, point: (i32, i32)) -> bool {
-    if let Some(_) = space.get(&point) {
-        true
-    } else {
-        false
-    }
-}
-
-fn lerp(start: i32, end: i32, t: f32) -> i32 {
-    let start = start as f32;
-    let end = end as f32;
-    (start + t * (end - start)) as i32
-}
-
-fn lerp_point(start: (i32, i32), end: (i32, i32), t: f32) -> (i32, i32) {
-    (lerp(start.0, end.0, t), lerp(start.1, end.1, t))
-}
-fn dist(start: (i32, i32), end: (i32, i32)) -> i32 {
-    let dx = end.0 - start.0;
-    let dy = end.1 - start.1;
-    std::cmp::max(dx, dy)
-}
-
-fn hits(space: &HashSet<(i32, i32)>, origin: (i32, i32), target: (i32, i32)) -> Option<(i32, i32)> {
-    // let (ox, oy) = origin;
-    // let (tx, ty) = target;
-    // let ray = (ox - tx, oy - ty);
-    // for divisor in 1..52 {
-    //     let (rx, ry) = (ray.0 / divisor, ray.1 / divisor);
-    //     let point = (rx + tx, ry + ty);
-    //     if check_visible(space, point) {
-    //         return true
-    //     }
-    // }
-    // println!("{:?}", ray);
-    let mut points = vec![];
-    let max_points = dist(origin, target) + 1;
-    for step in 1..max_points {
-        let t = step as f32 / max_points as f32;
-        points.push(lerp_point(origin, target, t));
-    }
-    for point in points {
-        if check_visible(space, point) {
-            return Some(point);
-        }
-    }
-    None
+#[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
+struct Slope {
+    sign_x: i32,
+    sign_y: i32,
+    value: OrderedFloat<f32>,
 }
 
 fn part1(lines: &Vec<String>) {
-    let space : HashSet<(i32, i32)> = lines
+    let asteroids : HashSet<(i32, i32)> = lines
     .iter()
     .enumerate()
     .flat_map(|(y, line)| {
@@ -77,28 +37,33 @@ fn part1(lines: &Vec<String>) {
     }).collect();
 
     let mut matches : HashMap<(i32, i32), u32> = HashMap::new();
-    for asteroid in space.iter() {
-        let mut visible: HashSet<(i32, i32)> = HashSet::new();
-        for y in 0..36 {
-            for x in 0..36 {
-                let x = x as i32;
-                let y = y as i32;
-                if (x == 0 || x == 35) || (y == 0 || y == 35) {
-                    // print!("{:?}, {},{} = ", *asteroid, x, y);
-                    if let Some(hit) = hits(&space, *asteroid, (x, y)) {
-                        visible.insert(hit);        
-                    }
-                }
-                // if check_visible(&space, x, y) {
-                //     print!("#");
-                // } else {
-                //     print!(" ");
-                // }
-            }
-            // print!("\n");
-        }
+    for asteroid in asteroids.iter() {
+        let visible: HashSet<Slope> = asteroids
+            .iter()
+            .zip(vec![asteroid].iter().cycle())
+            .filter(|(base, asteriod)| {
+                *base != **asteriod
+            })
+            .map(|(base, asteriod)| {
+                let run: f32 = (asteriod.0 - base.0) as f32;
+                let rise: f32 = (asteriod.1 - base.1) as f32;
+                let sign_x = if run >= 0.0 {
+                    1
+                } else {
+                    -1
+                };
+                let sign_y = if rise >= 0.0 {
+                    1
+                } else {
+                    -1
+                };
+                let value : OrderedFloat<f32> = (rise / run).into();
+                println!("{:?}", value);
+                Slope {sign_x, sign_y, value}
+            })
+            .collect();
         let count = visible.len() as u32;
-        matches.insert(*asteroid, count);  //.entry(*asteroid).and_modify(|c| *c = *c + 1).or_insert(1);
+        matches.insert(*asteroid, count);
     }
     let best = matches.iter().fold(0, |best, (k, v)| {
         println!("{:?}: {}", k, v);
@@ -108,97 +73,14 @@ fn part1(lines: &Vec<String>) {
             best
         }
     });
-    // let asteroids :HashSet= space.iter().filter_map(|(k, v)| {
-    //     if v {
-    //         k
-    //     }
-    // })
-
-    // let mut matches : HashMap<(usize, usize), u32> = HashMap::new();
-    // for asteroid in space.iter() {
-    //     for y in 0..36*2 {
-    //         for x in 0..36*2 {
-    //             if hits(&space, *asteroid, (x, y)) {
-    //                 matches.entry((x, y)).and_modify(|c| *c = *c + 1).or_insert(1);
-    //             }
-    //         }
-    //     }
-    // }
-
-    // space.iter().for_each(|t| {
-    //     t.iter().for_each(|pa| {
-    //         if *pa {
-    //             print!("█");
-    //         } else {
-    //             print!(" ");
-    //         }
-    //     });
-    //     print!("\n");
-    // });
-    // space.iter().
-
-    // let pixels = lines[0]
-    //     .chars()
-    //     .map(|c| c.to_digit(10).unwrap())
-    //     .collect::<Vec<u32>>();
-    // let width = 25;
-    // let height = 6;
-
-    // let layers = pixels.windows(width * height).step_by(width * height);
-    // let (_, count) = layers.fold((usize::max_value(), 0), |(num_zeros, num_sum), layer| {
-    //     let zero_count = layer.iter().filter(|d| **d == 0).count();
-    //     if zero_count < num_zeros {
-    //         let ones = layer.iter().filter(|d| **d == 1).count();
-    //         let twos = layer.iter().filter(|d| **d == 2).count();
-    //         (zero_count, ones * twos)
-    //     } else {
-    //         (num_zeros, num_sum)
-    //     }
-    // });
-
+   
     println!("Part 1: {:?}", best);
 }
 
-// fn print_image(image: &Vec<u32>, width: usize, height: usize) {
-//     for y in 0..height {
-//         for x in 0..width {
-//             if image[x + y * width] == 0 {
-//                 print!(" ");
-//             } else {
-//                 print!("█");
-//             }
-//         }
-//         print!("\n");
-//     }
-//     print!("\n\n");
-// }
+
 
 fn part2(lines: &Vec<String>) {
-    // let pixels = lines[0]
-    //     .chars()
-    //     .map(|c| c.to_digit(10).unwrap())
-    //     .collect::<Vec<u32>>();
-    // let width = 25;
-    // let height = 6;
-    // let mut layers = pixels.windows(width * height).step_by(width * height);
-
-    // let mut image: Vec<u32> = Vec::from(layers.next().unwrap());
-
-    // image = layers.fold(image, |image, layer| {
-    //     layer
-    //         .iter()
-    //         .zip(image)
-    //         .map(|(layer_pixel, mut image_pixel)| {
-    //             if image_pixel == 2 && *layer_pixel != 2 {
-    //                 image_pixel = *layer_pixel;
-    //             }
-    //             image_pixel
-    //         })
-    //         .collect()
-    // });
-
     println!("Part 2: {}", 0);
-    // print_image(&image, width, height);
 }
 
 pub fn load(days_array: &mut Vec<Day>) {
