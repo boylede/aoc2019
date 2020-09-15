@@ -136,7 +136,7 @@ where VM: VirtualMachine
 }
 
 pub trait Collector {
-    fn collect(&mut HashMap<u32, i64>) -> Option<i64>;
+    fn collect(group: &mut HashMap<u32, i64>) -> Option<i64>;
 }
 
 pub struct BroadcastNetwork<VM, C> 

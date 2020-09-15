@@ -3,6 +3,7 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::BTreeMap;
 
 use ordered_float::OrderedFloat;
 
@@ -10,7 +11,7 @@ use aoc2019::Day;
 
 const DAY: i32 = 10;
 
-#[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
+#[derive(Hash, Eq, PartialEq, Debug, Copy, Clone, Ord, PartialOrd)]
 struct Slope {
     sign_x: i32,
     sign_y: i32,
@@ -47,16 +48,8 @@ fn part1(lines: &Vec<String>) {
             .map(|(base, asteriod)| {
                 let run: f32 = (asteriod.0 - base.0) as f32;
                 let rise: f32 = (asteriod.1 - base.1) as f32;
-                let sign_x = if run >= 0.0 {
-                    1
-                } else {
-                    -1
-                };
-                let sign_y = if rise >= 0.0 {
-                    1
-                } else {
-                    -1
-                };
+                let sign_x = sign(run);
+                let sign_y = sign(rise);
                 let value : OrderedFloat<f32> = (rise / run).into();
                 println!("{:?}", value);
                 Slope {sign_x, sign_y, value}
@@ -77,9 +70,90 @@ fn part1(lines: &Vec<String>) {
     println!("Part 1: {:?}", best);
 }
 
-
+fn sign(num: f32) -> i32 {
+    if num >= 0.0 {
+        1
+    } else {
+        -1
+    }
+}
 
 fn part2(lines: &Vec<String>) {
+    let asteroids = lines
+    .iter()
+    .enumerate()
+    .flat_map(|(y, line)| {
+        line
+        .chars()
+        .enumerate()
+        .filter_map(|(x, c) | {
+            if c == '#' {
+                Some((x as i32, y as i32))
+            } else {
+                None
+            }
+        })
+        .collect::<HashSet<(i32, i32)>>()
+    }).collect::<HashSet<(i32, i32)>>();
+
+    let candidates : HashMap<(i32, i32), usize> = asteroids
+    .iter()
+    .map(|&asteroid| {
+        let visible: HashSet<Slope> = asteroids
+            .iter()
+            .zip(vec![asteroid].iter().cycle())
+            .filter(|(base, asteriod)| {
+                *base != *asteriod
+            })
+            .map(|(base, asteriod)| {
+                let run: f32 = (asteriod.0 - base.0) as f32;
+                let rise: f32 = (asteriod.1 - base.1) as f32;
+                let sign_x = sign(run);
+                let sign_y = sign(rise);
+                let value : OrderedFloat<f32> = (rise / run).into();
+                // println!("{:?}", value);
+                let distance = (asteroid.0 - base.0).abs() + (asteroid.1 - base.1).abs();
+                Slope {sign_x, sign_y, value}
+            })
+            .collect();
+        let count = visible.len();
+        (asteroid, count)
+    }).collect();
+
+    let mut candidates_iter = candidates.iter();
+    let first = candidates_iter.next().unwrap();
+
+    let (base, _) = candidates.iter().fold(first, |(asteroid, score), (k, v)| {
+        if v > score {
+            (k, v)
+        } else {
+            (asteroid, score)
+        }
+    });
+
+    let strike_list : BTreeMap<(Slope, i32), (i32, i32)> = asteroids
+    .iter()
+    .map(|&asteroid| {
+        
+        let run: f32 = (asteroid.0 - base.0) as f32;
+        let rise: f32 = (asteroid.1 - base.1) as f32;
+        let sign_x = if run >= 0.0 {
+            1
+        } else {
+            -1
+        };
+        let sign_y = if rise >= 0.0 {
+            1
+        } else {
+            -1
+        };
+        let value : OrderedFloat<f32> = (rise / run).into();
+        
+        let distance = (asteroid.0 - base.0).abs() + (asteroid.1 - base.1).abs();
+        let slope = Slope {sign_x, sign_y, value};
+
+        ((slope, distance), asteroid)
+    }).collect();
     println!("Part 2: {}", 0);
 }
 
